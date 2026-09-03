@@ -50,9 +50,24 @@ class OrganizationTest extends TestCase
         $this->seed(OrganizationSeeder::class);
         $this->seed(OrganizationSeeder::class);
 
-        $this->assertSame(2, Division::count());
-        $this->assertSame(2, Section::count());
+        $this->assertSame(4, Division::count());
+        $this->assertSame(28, Section::count());
         $this->assertSame(2, Position::count());
-        $this->assertSame('ADMIN', Section::where('code', 'STAT')->first()->division->code);
+    }
+
+    public function test_the_repeated_section_name_lands_in_two_different_divisions(): void
+    {
+        // "Office of the Chief Health Program Officer" heads both the inpatient
+        // and the outpatient division. Two sections, one name — the unique code
+        // column is what keeps them apart.
+        $this->seed(OrganizationSeeder::class);
+
+        $this->assertSame('RITD', Section::where('code', 'OCHPO-RITD')->first()->division->code);
+        $this->assertSame('OAD', Section::where('code', 'OCHPO-OAD')->first()->division->code);
+
+        $this->assertSame(
+            2,
+            Section::where('name', 'Office of the Chief Health Program Officer')->count()
+        );
     }
 }
