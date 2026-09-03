@@ -16,6 +16,7 @@
         'pds.work-experience' => __('Work experience'),
         'pds.voluntary-work' => __('Voluntary work'),
         'pds.learning-development' => __('Learning & development'),
+        'pds.other-information' => __('Other information'),
     ];
 
     $query = $employee ? ['employee' => $employee] : [];

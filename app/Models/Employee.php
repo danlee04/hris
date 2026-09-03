@@ -8,6 +8,7 @@ use App\Models\Pds\Education;
 use App\Models\Pds\Eligibility;
 use App\Models\Pds\FamilyBackground;
 use App\Models\Pds\LearningDevelopment;
+use App\Models\Pds\OtherEntry;
 use App\Models\Pds\PersonalInformation;
 use App\Models\Pds\VoluntaryWork;
 use App\Models\Pds\WorkExperience;
@@ -154,6 +155,12 @@ class Employee extends Model
     public function learningDevelopments(): HasMany
     {
         return $this->hasMany(LearningDevelopment::class)->orderBy('sort_order');
+    }
+
+    /** CS Form 212 items 31-33, all three lists in one relation. */
+    public function otherEntries(): HasMany
+    {
+        return $this->hasMany(OtherEntry::class)->orderBy('kind')->orderBy('sort_order');
     }
 
     /** Surname first, the way HR reads a list. */

@@ -23,4 +23,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::livewire('pds/learning-development', 'pages::pds.learning-development')
         ->name('pds.learning-development');
+
+    Route::livewire('pds/other-information', 'pages::pds.other-information')
+        ->name('pds.other-information');
 });
