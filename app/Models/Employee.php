@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\EmploymentStatus;
 use App\Models\Pds\Child;
+use App\Models\Pds\Education;
 use App\Models\Pds\FamilyBackground;
 use App\Models\Pds\PersonalInformation;
 use Database\Factories\EmployeeFactory;
@@ -119,6 +120,12 @@ class Employee extends Model
     public function children(): HasMany
     {
         return $this->hasMany(Child::class)->orderBy('sort_order');
+    }
+
+    /** CS Form 212 items 21-26. */
+    public function educations(): HasMany
+    {
+        return $this->hasMany(Education::class)->orderBy('sort_order');
     }
 
     /** Surname first, the way HR reads a list. */

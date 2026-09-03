@@ -11,6 +11,7 @@
     $sections = [
         'pds.personal-information' => __('Personal information'),
         'pds.family-background' => __('Family background'),
+        'pds.education' => __('Education'),
     ];
 
     $query = $employee ? ['employee' => $employee] : [];
