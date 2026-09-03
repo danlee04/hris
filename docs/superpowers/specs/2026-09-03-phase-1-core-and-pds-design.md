@@ -5,7 +5,7 @@ Status: Approved for planning
 
 ## Context
 
-The hospital's HR office runs on two systems today, neither of which holds a
+The DTRC's HR office runs on two systems today, neither of which holds a
 complete employee record.
 
 - `ipcr-system-laravel` — Laravel 13 / PHP 8.3, Blade with Alpine and Tailwind
@@ -35,18 +35,18 @@ in play:
 - **CSC PRIME-HRM four core HR systems** — Recruitment/Selection/Placement,
   Learning and Development, Performance Management, Rewards and Recognition.
   This is the Civil Service Commission's accreditation framework. It measures
-  HR *processes*, not software.
+  HR _processes_, not software.
 - **Day-to-day HR operations** — 201 records, attendance, leave. None of these
   appear in PRIME-HRM, and the HR office cannot function without them.
 
 The project serves both, operations first:
 
-| Phase | Delivers |
-| --- | --- |
+| Phase | Delivers                                               |
+| ----- | ------------------------------------------------------ |
 | **1** | Core, employee master, PDS, CSC export — **this spec** |
-| 2 | Leave and DTR |
-| 3 | Recruitment, Selection and Placement |
-| 4 | Rewards and Recognition (PRAISE) |
+| 2     | Leave and DTR                                          |
+| 3     | Recruitment, Selection and Placement                   |
+| 4     | Rewards and Recognition (PRAISE)                       |
 
 Performance Management stays in `ipcr-system-laravel`. Learning and Development
 stays in `hr_training_system` until a later phase replaces it.
@@ -55,23 +55,23 @@ stays in `hr_training_system` until a later phase replaces it.
 
 Created with `laravel new hris` using the Livewire starter kit:
 
-| | |
-| --- | --- |
-| Laravel 13.17 / PHP 8.3 | Matches `ipcr-system-laravel` |
-| Livewire 4.1 | Repeating rows and forms |
-| Laravel Fortify | Authentication (registration, login, password reset) |
-| Flux | UI component library shipped with the starter kit |
-| Tailwind v4 | Matches `ipcr-system-laravel` |
-| PHPUnit | Matches `ipcr-system-laravel` |
-| MySQL 8 | Database driver for session, cache and queue |
+|                         |                                                      |
+| ----------------------- | ---------------------------------------------------- |
+| Laravel 13.17 / PHP 8.3 | Matches `ipcr-system-laravel`                        |
+| Livewire 4.1            | Repeating rows and forms                             |
+| Laravel Fortify         | Authentication (registration, login, password reset) |
+| Flux                    | UI component library shipped with the starter kit    |
+| Tailwind v4             | Matches `ipcr-system-laravel`                        |
+| PHPUnit                 | Matches `ipcr-system-laravel`                        |
+| MySQL 8                 | Database driver for session, cache and queue         |
 
 To be added:
 
-| Package | For |
-| --- | --- |
-| `spatie/laravel-permission` | Roles and permissions |
-| `spatie/laravel-activitylog` | Change and access audit trail |
-| `phpoffice/phpspreadsheet` | Filling the official CSC `.xlsx` template |
+| Package                      | For                                       |
+| ---------------------------- | ----------------------------------------- |
+| `spatie/laravel-permission`  | Roles and permissions                     |
+| `spatie/laravel-activitylog` | Change and access audit trail             |
+| `phpoffice/phpspreadsheet`   | Filling the official CSC `.xlsx` template |
 
 Deliberately excluded: queue workers, Horizon, Redis, a REST API,
 multi-tenancy. At 100–500 users on a LAN, `.xlsx` generation runs synchronously
@@ -114,11 +114,11 @@ Added now, while the table is empty.
 unique: an employee record exists before a login is issued, which is what makes
 the CSV import possible before anyone can sign in.
 
-| Role | Can |
-| --- | --- |
-| `employee` | View and edit **their own** PDS. Export their own PDS. |
-| `hr` | View all employees and all PDS records. Edit the employee master. Correct any PDS. Import employees. Export any PDS. Read the audit log. |
-| `admin` | Everything in `hr`, plus user creation and deactivation, role assignment, organizational structure, and system settings. |
+| Role       | Can                                                                                                                                      |
+| ---------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| `employee` | View and edit **their own** PDS. Export their own PDS.                                                                                   |
+| `hr`       | View all employees and all PDS records. Edit the employee master. Correct any PDS. Import employees. Export any PDS. Read the audit log. |
+| `admin`    | Everything in `hr`, plus user creation and deactivation, role assignment, organizational structure, and system settings.                 |
 
 HR may edit another employee's PDS. This is required — some employees will not
 maintain it, and errors need correcting. The audit trail is what makes it safe,
@@ -164,24 +164,24 @@ employee, so a container would add a join to every query and buy nothing.
 
 ### One-to-one with employee
 
-| Table | CSC items |
-| --- | --- |
+| Table                      | CSC items                                                                                                                                                                                                         |
+| -------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `pds_personal_information` | 1–16 — names, birth, sex, civil status, height, weight, blood type, GSIS, PAG-IBIG, PhilHealth, SSS, PhilSys, TIN, agency employee number, citizenship, residential and permanent address, contact details, photo |
-| `pds_family_background` | 17, 19, 20 — spouse, father, mother (maiden name) |
-| `pds_declarations` | 34–40, each a boolean plus a details field; 42 government ID; date accomplished |
+| `pds_family_background`    | 17, 19, 20 — spouse, father, mother (maiden name)                                                                                                                                                                 |
+| `pds_declarations`         | 34–40, each a boolean plus a details field; 42 government ID; date accomplished                                                                                                                                   |
 
 ### One-to-many
 
-| Table | CSC item | Notes |
-| --- | --- | --- |
-| `pds_children` | 18 | Name and date of birth |
-| `pds_educations` | 21–26 | `level` enum: Elementary, Secondary, Vocational, College, Graduate |
-| `pds_eligibilities` | 27 | Eligibility, rating, exam date and place, license number and validity |
-| `pds_work_experiences` | 28 | Inclusive dates, position, agency, monthly salary, salary grade and step, appointment status, government service flag |
-| `pds_voluntary_works` | 29 | Organization, dates, hours, nature of work |
-| `pds_learning_developments` | 30 | `type` enum: Managerial, Supervisory, Technical, Foundation |
-| `pds_other_entries` | 31–33 | `kind` enum: skill_hobby, distinction, membership |
-| `pds_references` | 41 | Three entries |
+| Table                       | CSC item | Notes                                                                                                                 |
+| --------------------------- | -------- | --------------------------------------------------------------------------------------------------------------------- |
+| `pds_children`              | 18       | Name and date of birth                                                                                                |
+| `pds_educations`            | 21–26    | `level` enum: Elementary, Secondary, Vocational, College, Graduate                                                    |
+| `pds_eligibilities`         | 27       | Eligibility, rating, exam date and place, license number and validity                                                 |
+| `pds_work_experiences`      | 28       | Inclusive dates, position, agency, monthly salary, salary grade and step, appointment status, government service flag |
+| `pds_voluntary_works`       | 29       | Organization, dates, hours, nature of work                                                                            |
+| `pds_learning_developments` | 30       | `type` enum: Managerial, Supervisory, Technical, Foundation                                                           |
+| `pds_other_entries`         | 31–33    | `kind` enum: skill_hobby, distinction, membership                                                                     |
+| `pds_references`            | 41       | Three entries                                                                                                         |
 
 ### Three decisions worth recording
 
@@ -308,13 +308,13 @@ Livewire request. Nothing to build.
 
 ## Deployment
 
-| | |
-| --- | --- |
-| Development | Laragon, `hris.test`, MySQL 8 |
-| Production | LAN server: nginx or Apache, PHP-FPM 8.3, MySQL 8, self-signed HTTPS |
-| Session, cache, queue | Database driver throughout |
-| Deploy | `git pull` → `composer install --no-dev -o` → `php artisan migrate` → `npm run build` → `php artisan optimize` |
-| Backup | Nightly `mysqldump`, encrypted, copied off the machine |
+|                       |                                                                                                                |
+| --------------------- | -------------------------------------------------------------------------------------------------------------- |
+| Development           | Laragon, `hris.test`, MySQL 8                                                                                  |
+| Production            | LAN server: nginx or Apache, PHP-FPM 8.3, MySQL 8, self-signed HTTPS                                           |
+| Session, cache, queue | Database driver throughout                                                                                     |
+| Deploy                | `git pull` → `composer install --no-dev -o` → `php artisan migrate` → `npm run build` → `php artisan optimize` |
+| Backup                | Nightly `mysqldump`, encrypted, copied off the machine                                                         |
 
 ## Testing
 
