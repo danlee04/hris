@@ -17,6 +17,7 @@
         'pds.voluntary-work' => __('Voluntary work'),
         'pds.learning-development' => __('Learning & development'),
         'pds.other-information' => __('Other information'),
+        'pds.declarations' => __('Declarations'),
     ];
 
     $query = $employee ? ['employee' => $employee] : [];

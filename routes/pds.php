@@ -26,4 +26,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::livewire('pds/other-information', 'pages::pds.other-information')
         ->name('pds.other-information');
+
+    Route::livewire('pds/declarations', 'pages::pds.declarations')
+        ->name('pds.declarations');
 });

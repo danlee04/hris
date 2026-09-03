@@ -4,12 +4,14 @@ namespace App\Models;
 
 use App\Enums\EmploymentStatus;
 use App\Models\Pds\Child;
+use App\Models\Pds\Declaration;
 use App\Models\Pds\Education;
 use App\Models\Pds\Eligibility;
 use App\Models\Pds\FamilyBackground;
 use App\Models\Pds\LearningDevelopment;
 use App\Models\Pds\OtherEntry;
 use App\Models\Pds\PersonalInformation;
+use App\Models\Pds\Reference;
 use App\Models\Pds\VoluntaryWork;
 use App\Models\Pds\WorkExperience;
 use Database\Factories\EmployeeFactory;
@@ -161,6 +163,18 @@ class Employee extends Model
     public function otherEntries(): HasMany
     {
         return $this->hasMany(OtherEntry::class)->orderBy('kind')->orderBy('sort_order');
+    }
+
+    /** CS Form 212 items 34-40 and 42. */
+    public function declaration(): HasOne
+    {
+        return $this->hasOne(Declaration::class);
+    }
+
+    /** CS Form 212 item 41. */
+    public function references(): HasMany
+    {
+        return $this->hasMany(Reference::class)->orderBy('sort_order');
     }
 
     /** Surname first, the way HR reads a list. */
