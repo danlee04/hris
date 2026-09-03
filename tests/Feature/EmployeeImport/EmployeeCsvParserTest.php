@@ -124,6 +124,54 @@ class EmployeeCsvParserTest extends TestCase
         $this->assertTrue($preview->rows[0]->isValid());
     }
 
+    public function test_a_biometric_id_already_in_the_database_is_reported(): void
+    {
+        // biometric_id is unique in the schema. This went unchecked at first,
+        // and the first real 134-row load reported a clean preview and then
+        // died part-way through on a duplicate key.
+        $this->seedReferenceData();
+        Employee::factory()->create(['biometric_id' => '1051']);
+
+        $preview = app(EmployeeCsvParser::class)->parse($this->csv(
+            '2014-0042,Juan,Santos,Dela Cruz,,Statistician II,ADMIN,STAT,permanent,2014-06-01,1051'
+        ));
+
+        $this->assertContains(
+            'biometric_id [1051] already belongs to another employee',
+            $preview->invalidRows()[0]->errors
+        );
+    }
+
+    public function test_a_biometric_id_repeated_inside_the_file_is_reported(): void
+    {
+        $this->seedReferenceData();
+
+        $preview = app(EmployeeCsvParser::class)->parse($this->csv(
+            "2014-0042,Juan,Santos,Dela Cruz,,Statistician II,ADMIN,STAT,permanent,2014-06-01,1051\n".
+            '2015-0100,Maria,Reyes,Bautista,,Statistician II,ADMIN,STAT,permanent,2015-01-05,1051'
+        ));
+
+        $this->assertContains(
+            'biometric_id [1051] is repeated on line 2',
+            $preview->rows[1]->errors
+        );
+        $this->assertTrue($preview->rows[0]->isValid());
+    }
+
+    public function test_many_blank_biometric_ids_are_not_treated_as_duplicates(): void
+    {
+        // Blank is the common case — most staff have no device row yet. Two
+        // blanks must not collide the way two 1051s do.
+        $this->seedReferenceData();
+
+        $preview = app(EmployeeCsvParser::class)->parse($this->csv(
+            "2014-0042,Juan,Santos,Dela Cruz,,Statistician II,ADMIN,STAT,permanent,2014-06-01,\n".
+            '2015-0100,Maria,Reyes,Bautista,,Statistician II,ADMIN,STAT,permanent,2015-01-05,'
+        ));
+
+        $this->assertFalse($preview->hasErrors());
+    }
+
     public function test_an_unknown_employment_status_is_reported(): void
     {
         $this->seedReferenceData();

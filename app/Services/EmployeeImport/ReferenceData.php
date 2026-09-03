@@ -26,12 +26,14 @@ final class ReferenceData
      * @param  array<string, int>  $sections  upper-cased code => id
      * @param  array<string, int>  $positions  lower-cased title => id
      * @param  array<string, true>  $takenNumbers
+     * @param  array<string, true>  $takenBiometricIds
      */
     private function __construct(
         private readonly array $divisions,
         private readonly array $sections,
         private readonly array $positions,
         private readonly array $takenNumbers,
+        private readonly array $takenBiometricIds,
     ) {}
 
     public static function load(): self
@@ -43,6 +45,10 @@ final class ReferenceData
             // withTrashed: the unique index does not care that a row is soft
             // deleted, so neither can this check.
             array_fill_keys(Employee::withTrashed()->pluck('employee_number')->all(), true),
+            array_fill_keys(
+                Employee::withTrashed()->whereNotNull('biometric_id')->pluck('biometric_id')->all(),
+                true
+            ),
         );
     }
 
@@ -64,6 +70,16 @@ final class ReferenceData
     public function numberIsTaken(string $number): bool
     {
         return isset($this->takenNumbers[$number]);
+    }
+
+    /**
+     * biometric_id is unique in the schema too. Leaving it unchecked here means
+     * the preview reports a clean file and the import dies part-way through on
+     * a duplicate key — which is exactly what happened on the first real load.
+     */
+    public function biometricIdIsTaken(string $biometricId): bool
+    {
+        return isset($this->takenBiometricIds[$biometricId]);
     }
 
     /**

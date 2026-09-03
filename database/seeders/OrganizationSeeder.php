@@ -137,6 +137,10 @@ class OrganizationSeeder extends Seeder
         'UTILITY',
         'VEHICLE MECHANIC',
         'WAREHOUSEMAN II',
+        'ACCOUNTING CLERK',
+        'COMPUTER PROGRAMMER I',
+        'MEDICAL SPECIALIST I',
+        'ARCHITECT I',
     ];
 
     public function run(): void

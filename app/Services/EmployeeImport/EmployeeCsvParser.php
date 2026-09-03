@@ -57,6 +57,7 @@ class EmployeeCsvParser
 
         $rows = [];
         $seen = [];
+        $seenBiometricIds = [];
         $lineNumber = 1;
 
         while (! $file->eof()) {
@@ -77,10 +78,14 @@ class EmployeeCsvParser
                 )
             );
 
-            $errors = $this->errorsFor($data, $reference, $seen);
+            $errors = $this->errorsFor($data, $reference, $seen, $seenBiometricIds);
 
             if ($data['employee_number'] !== '' && ! isset($seen[$data['employee_number']])) {
                 $seen[$data['employee_number']] = $lineNumber;
+            }
+
+            if ($data['biometric_id'] !== '' && ! isset($seenBiometricIds[$data['biometric_id']])) {
+                $seenBiometricIds[$data['biometric_id']] = $lineNumber;
             }
 
             $rows[] = new CsvRow($lineNumber, $data, $errors);
@@ -92,10 +97,15 @@ class EmployeeCsvParser
     /**
      * @param  array<string, string>  $data
      * @param  array<string, int>  $seen
+     * @param  array<string, int>  $seenBiometricIds
      * @return list<string>
      */
-    private function errorsFor(array $data, ReferenceData $reference, array $seen): array
-    {
+    private function errorsFor(
+        array $data,
+        ReferenceData $reference,
+        array $seen,
+        array $seenBiometricIds,
+    ): array {
         $errors = [];
 
         foreach (self::REQUIRED as $column) {
@@ -112,6 +122,16 @@ class EmployeeCsvParser
 
         if ($number !== '' && isset($seen[$number])) {
             $errors[] = "employee_number [{$number}] is repeated on line {$seen[$number]}";
+        }
+
+        $biometricId = $data['biometric_id'];
+
+        if ($biometricId !== '' && $reference->biometricIdIsTaken($biometricId)) {
+            $errors[] = "biometric_id [{$biometricId}] already belongs to another employee";
+        }
+
+        if ($biometricId !== '' && isset($seenBiometricIds[$biometricId])) {
+            $errors[] = "biometric_id [{$biometricId}] is repeated on line {$seenBiometricIds[$biometricId]}";
         }
 
         if ($data['division_code'] !== '' && $reference->divisionId($data['division_code']) === null) {

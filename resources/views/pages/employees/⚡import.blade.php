@@ -159,7 +159,6 @@ new #[Title('Import employees')] class extends Component {
             </flux:table>
 
             @if ($errorCount > 0)
-                {{-- A disabled button that says nothing looks like a broken one. --}}
                 <flux:callout class="mt-6" variant="warning" icon="exclamation-triangle">
                     <flux:callout.heading>
                         {{ __('Import is blocked') }}
@@ -170,15 +169,31 @@ new #[Title('Import employees')] class extends Component {
                 </flux:callout>
             @endif
 
-            {{-- Flux renders its own spinner from wire:target; no wire:loading spans needed. --}}
-            <flux:button
-                class="mt-6"
-                variant="primary"
-                wire:click="commit"
-                :disabled="$errorCount > 0"
-            >
-                {{ __('Import :count employees', ['count' => $validCount]) }}
-            </flux:button>
+            {{--
+                A form rather than a bare wire:click, and never disabled.
+
+                Both choices exist for the same reason: this button spent an
+                afternoon doing nothing visible, and there was no way to tell
+                from the screen whether the click had been refused, had failed,
+                or had never left the browser. A submit reaches Livewire through
+                the form rather than through a click handler on the button, and
+                an always-live button means every press produces an answer —
+                the server refuses a bad import and says so.
+            --}}
+            <form wire:submit="commit" class="mt-6">
+                {{--
+                    The error is repeated here on purpose. `flux:error` for this
+                    field also sits beside the upload box at the top of the page,
+                    and on a long preview that is far off screen — so a refused
+                    import looked from down here like a button doing nothing.
+                    Whatever the answer is, it appears where the press happened.
+                --}}
+                <flux:error name="file" class="mb-3" />
+
+                <flux:button type="submit" variant="primary">
+                    {{ __('Import :count employees', ['count' => $validCount]) }}
+                </flux:button>
+            </form>
         </div>
     @endif
 </section>
