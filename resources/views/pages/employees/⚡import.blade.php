@@ -170,19 +170,14 @@ new #[Title('Import employees')] class extends Component {
                 </flux:callout>
             @endif
 
+            {{-- Flux renders its own spinner from wire:target; no wire:loading spans needed. --}}
             <flux:button
                 class="mt-6"
                 variant="primary"
                 wire:click="commit"
-                wire:loading.attr="disabled"
                 :disabled="$errorCount > 0"
             >
-                <span wire:loading.remove wire:target="commit">
-                    {{ __('Import :count employees', ['count' => $validCount]) }}
-                </span>
-                <span wire:loading wire:target="commit">
-                    {{ __('Importing...') }}
-                </span>
+                {{ __('Import :count employees', ['count' => $validCount]) }}
             </flux:button>
         </div>
     @endif
