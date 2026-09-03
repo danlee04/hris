@@ -29,4 +29,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::livewire('pds/declarations', 'pages::pds.declarations')
         ->name('pds.declarations');
+
+    Route::livewire('pds/export', 'pages::pds.export')
+        ->name('pds.export');
 });

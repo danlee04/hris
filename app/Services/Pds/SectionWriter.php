@@ -44,8 +44,11 @@ class SectionWriter
             $onPage,
         );
 
-        if ($overflow === []) {
-            return 0;
+        // References have no continuation sheet: the form prints three and
+        // offers nowhere for a fourth. That is the form's decision, and the
+        // count comes back so a caller can say so if it wants to.
+        if ($overflow === [] || ! isset($section['continuation'])) {
+            return count($overflow);
         }
 
         $continuation = $section['continuation'];

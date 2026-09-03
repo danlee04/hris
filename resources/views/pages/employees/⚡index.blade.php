@@ -83,18 +83,29 @@ new #[Title('Employees')] class extends Component {
                         @endif
                     </flux:table.cell>
                     <flux:table.cell>
-                        {{-- Opening somebody else's PDS is recorded. The link is
-                             guarded so it does not appear to anyone who would
-                             only be shown a 403 on the other side. --}}
-                        @can('viewPds', $employee)
-                            <flux:link
-                                :href="route('pds.personal-information', ['employee' => $employee->id])"
-                                wire:navigate
-                                class="text-sm"
-                            >
-                                {{ __('Open') }}
-                            </flux:link>
-                        @endcan
+                        {{-- Both links are guarded so neither appears to anyone
+                             who would only be shown a 403 on the other side.
+                             Opening or downloading somebody else's PDS is
+                             recorded either way. --}}
+                        <div class="flex gap-3 text-sm">
+                            @can('viewPds', $employee)
+                                <flux:link
+                                    :href="route('pds.personal-information', ['employee' => $employee->id])"
+                                    wire:navigate
+                                >
+                                    {{ __('Open') }}
+                                </flux:link>
+                            @endcan
+
+                            @can('exportPds', $employee)
+                                <flux:link
+                                    :href="route('pds.export', ['employee' => $employee->id])"
+                                    wire:navigate
+                                >
+                                    {{ __('Download') }}
+                                </flux:link>
+                            @endcan
+                        </div>
                     </flux:table.cell>
                 </flux:table.row>
             @empty

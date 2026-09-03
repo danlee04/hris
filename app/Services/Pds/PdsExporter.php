@@ -33,7 +33,7 @@ class PdsExporter
         $employee->loadMissing([
             'personalInformation', 'familyBackground', 'children', 'educations',
             'eligibilities', 'workExperiences', 'voluntaryWorks',
-            'learningDevelopments', 'otherEntries',
+            'learningDevelopments', 'otherEntries', 'declaration', 'references',
         ]);
 
         $book = IOFactory::load($this->map->path());
@@ -44,6 +44,8 @@ class PdsExporter
         $this->writeEducation($book, $employee);
         $this->writeRepeatingSections($book, $employee);
         $this->writeOtherInformation($book, $employee);
+        $this->writeDeclarations($book, $employee);
+        $this->writeReferences($book, $employee);
         $this->writePageDates($book);
 
         $path = tempnam(sys_get_temp_dir(), 'pds').'.xlsx';
@@ -261,6 +263,50 @@ class PdsExporter
                 $this->writer->put($contSheet, $contColumn.($continuation['first_row'] + $offset), $value);
             }
         }
+    }
+
+    /**
+     * Items 34 to 40 and 42.
+     *
+     * An unanswered question ticks neither box. Unanswered and "no" are
+     * different things on a form signed under penalty of perjury, and turning
+     * the first into the second would put words in the employee's mouth.
+     */
+    private function writeDeclarations(Spreadsheet $book, Employee $employee): void
+    {
+        $record = $employee->declaration;
+
+        if ($record === null) {
+            return;
+        }
+
+        $section = $this->map->section('declarations');
+        $sheet = $book->getSheetByName($this->map->sheet($section['sheet']));
+
+        foreach ($section['questions'] as $field => $boxes) {
+            $answer = $record->{$field};
+
+            if ($answer === null) {
+                continue;
+            }
+
+            $this->writer->tick($sheet, $answer ? $boxes['yes'] : $boxes['no']);
+        }
+
+        foreach ($section['cells'] as $field => $reference) {
+            $this->writer->put($sheet, $reference, $record->{$field} ?? null);
+        }
+    }
+
+    private function writeReferences(Spreadsheet $book, Employee $employee): void
+    {
+        $this->sections->write($book, 'references', $employee->references
+            ->map(fn ($reference) => [
+                'name' => $reference->name,
+                'address' => $reference->address,
+                'contact_details' => $reference->contact_details,
+            ])
+            ->all());
     }
 
     /**

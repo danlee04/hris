@@ -28,4 +28,14 @@
             {{ $section['label'] }}
         </flux:navbar.item>
     @endforeach
+
+    {{-- Not one of the nine sections; it is what you do once they are filled. --}}
+    <flux:navbar.item
+        :href="route('pds.export', $query)"
+        :current="request()->routeIs('pds.export')"
+        icon="arrow-down-tray"
+        wire:navigate
+    >
+        {{ __('Download') }}
+    </flux:navbar.item>
 </flux:navbar>

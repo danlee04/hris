@@ -413,6 +413,79 @@ return [
     ],
 
     /*
+     * Items 34 to 40 and 42, sheet C4.
+     *
+     * Each question is a pair of Excel checkboxes — YES and NO — and the cells
+     * below are the ones those controls are linked to, read out of
+     * xl/drawings/vmlDrawing2.vml.
+     *
+     * An unanswered question ticks NEITHER box. Unanswered and "no" are
+     * different things on a form signed under penalty of perjury, and the
+     * export must not turn the first into the second.
+     */
+    'declarations' => [
+        'sheet' => 'page_4',
+        'questions' => [
+            'q34_related_third_degree' => ['yes' => 'H3', 'no' => 'J3'],
+            'q34_related_fourth_degree' => ['yes' => 'H8', 'no' => 'J8'],
+            'q35_administrative_offense' => ['yes' => 'H13', 'no' => 'J13'],
+            'q35_criminally_charged' => ['yes' => 'H18', 'no' => 'J18'],
+            'q36_convicted' => ['yes' => 'H23', 'no' => 'J23'],
+            'q37_separated_from_service' => ['yes' => 'H27', 'no' => 'J27'],
+            'q38_candidate_in_election' => ['yes' => 'H31', 'no' => 'J31'],
+            'q38_resigned_to_campaign' => ['yes' => 'H34', 'no' => 'J34'],
+            'q39_immigrant_or_permanent_resident' => ['yes' => 'H37', 'no' => 'J37'],
+            'q40_indigenous_group' => ['yes' => 'H43', 'no' => 'J43'],
+            'q40_person_with_disability' => ['yes' => 'H45', 'no' => 'J45'],
+            'q40_solo_parent' => ['yes' => 'H47', 'no' => 'J47'],
+        ],
+        'cells' => [
+            'q34_related_details' => 'H5',
+            'q35_administrative_details' => 'I15',
+            'q35_criminal_details' => 'L19',
+            'q35_date_filed' => 'L20',
+            'q35_case_status' => 'L21',
+            'q36_details' => 'I25',
+            'q37_details' => 'I29',
+            'q38_candidate_details' => 'L32',
+            'q38_resigned_details' => 'L35',
+            'q39_details' => 'I39',
+
+            // The captions for 40a, b and c are unmerged and have no distinct
+            // input range, so these three are the only references in this file
+            // that were reasoned about rather than read. Check them against a
+            // printed copy before the first real submission.
+            'q40_indigenous_details' => 'K44',
+            'q40_pwd_id_no' => 'K46',
+            'q40_solo_parent_id_no' => 'K48',
+
+            // 42 — the caption sits below its box here too.
+            'government_id_type' => 'D61',
+            'government_id_number' => 'D62',
+            'government_id_issued' => 'D64',
+            'date_accomplished' => 'G64',
+        ],
+    ],
+
+    /*
+     * 41 — three references, sheet C4.
+     *
+     * The form prints three rows and offers no continuation sheet for them, so
+     * a fourth reference is simply not printed. That is the form's decision,
+     * not a limit imposed here.
+     */
+    'references' => [
+        'sheet' => 'page_4',
+        'first_row' => 52,
+        'row_count' => 3,
+        'columns' => [
+            'name' => 'A',
+            'address' => 'G',
+            'contact_details' => 'H',
+        ],
+    ],
+
+    /*
      * The 2026 revision prints a signature box and a date on every page, not
      * only the last, and labels the signature "(e-signature/digital
      * certificate)". Only the date is filled; what belongs in the signature
