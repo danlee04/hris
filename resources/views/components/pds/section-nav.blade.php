@@ -1,6 +1,7 @@
 {{--
-    The nine sections of CS Form 212. Entries appear here as each section is
-    built; Task 8 of the Phase 1b plan adds the completeness state to them.
+    The nine sections of CS Form 212, with a tick on the ones that hold
+    something. The list comes from PdsCompleteness so the tab bar and the
+    dashboard cannot disagree about what the sections are.
 
     `employee` is carried through so HR keeps looking at the same person when
     they move between sections.
@@ -8,29 +9,23 @@
 @props(['employee' => null])
 
 @php
-    $sections = [
-        'pds.personal-information' => __('Personal information'),
-        'pds.family-background' => __('Family background'),
-        'pds.education' => __('Education'),
-        'pds.eligibility' => __('Eligibility'),
-        'pds.work-experience' => __('Work experience'),
-        'pds.voluntary-work' => __('Voluntary work'),
-        'pds.learning-development' => __('Learning & development'),
-        'pds.other-information' => __('Other information'),
-        'pds.declarations' => __('Declarations'),
-    ];
+    $subject = $employee
+        ? App\Models\Employee::find($employee)
+        : auth()->user()?->employee;
 
+    $sections = $subject ? app(App\Services\Pds\PdsCompleteness::class)->for($subject) : [];
     $query = $employee ? ['employee' => $employee] : [];
 @endphp
 
-<flux:navbar class="mb-6 -mx-2 overflow-x-auto">
-    @foreach ($sections as $route => $label)
+<flux:navbar class="-mx-2 mb-6 overflow-x-auto">
+    @foreach ($sections as $section)
         <flux:navbar.item
-            :href="route($route, $query)"
-            :current="request()->routeIs($route)"
+            :href="route($section['route'], $query)"
+            :current="request()->routeIs($section['route'])"
+            :icon="$section['complete'] ? 'check-circle' : null"
             wire:navigate
         >
-            {{ $label }}
+            {{ $section['label'] }}
         </flux:navbar.item>
     @endforeach
 </flux:navbar>

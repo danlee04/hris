@@ -32,6 +32,18 @@ class PersonalInformation extends Model
 
     protected $table = 'pds_personal_information';
 
+    /**
+     * Columns that are a setting rather than an answer, and so do not count
+     * towards this section being started.
+     *
+     * `permanent_same_as_residential` carries a database default of false, so
+     * every freshly created row already holds it. Counting it would mark the
+     * section complete the moment somebody opened it and pressed Save.
+     *
+     * @var list<string>
+     */
+    public const NOT_AN_ANSWER = ['permanent_same_as_residential'];
+
     /** @return array<string, string> */
     protected function casts(): array
     {
