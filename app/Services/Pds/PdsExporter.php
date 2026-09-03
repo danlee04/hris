@@ -3,12 +3,9 @@
 namespace App\Services\Pds;
 
 use App\Enums\CivilStatus;
+use App\Enums\OtherEntryKind;
 use App\Models\Employee;
-use BackedEnum;
-use DateTimeInterface;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
-use PhpOffice\PhpSpreadsheet\Cell\DataType;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
@@ -22,19 +19,31 @@ use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
  */
 class PdsExporter
 {
-    public function __construct(private readonly TemplateMap $map) {}
+    public function __construct(
+        private readonly TemplateMap $map,
+        private readonly CellWriter $writer,
+        private readonly SectionWriter $sections,
+    ) {}
 
     /**
      * @return string the path of the filled workbook
      */
     public function export(Employee $employee): string
     {
-        $employee->loadMissing(['personalInformation', 'familyBackground']);
+        $employee->loadMissing([
+            'personalInformation', 'familyBackground', 'children', 'educations',
+            'eligibilities', 'workExperiences', 'voluntaryWorks',
+            'learningDevelopments', 'otherEntries',
+        ]);
 
         $book = IOFactory::load($this->map->path());
 
         $this->writePersonalInformation($book, $employee);
         $this->writeFamilyBackground($book, $employee);
+        $this->writeChildren($book, $employee);
+        $this->writeEducation($book, $employee);
+        $this->writeRepeatingSections($book, $employee);
+        $this->writeOtherInformation($book, $employee);
         $this->writePageDates($book);
 
         $path = tempnam(sys_get_temp_dir(), 'pds').'.xlsx';
@@ -64,10 +73,10 @@ class PdsExporter
 
         // Items 1 and 2 come from the employee master. The PDS tables do not
         // hold a second copy of the name, and a second copy would drift.
-        $this->put($sheet, $cells['surname'], $employee->last_name);
-        $this->put($sheet, $cells['first_name'], $employee->first_name);
-        $this->put($sheet, $cells['middle_name'], $employee->middle_name);
-        $this->put($sheet, $cells['name_extension'], $employee->suffix);
+        $this->writer->put($sheet, $cells['surname'], $employee->last_name);
+        $this->writer->put($sheet, $cells['first_name'], $employee->first_name);
+        $this->writer->put($sheet, $cells['middle_name'], $employee->middle_name);
+        $this->writer->put($sheet, $cells['name_extension'], $employee->suffix);
 
         if ($record === null) {
             return;
@@ -78,7 +87,7 @@ class PdsExporter
                 continue;
             }
 
-            $this->put($sheet, $reference, $record->{$field} ?? null);
+            $this->writer->put($sheet, $reference, $record->{$field} ?? null);
         }
 
         $this->tick($sheet, 'sex', $record->sex?->value);
@@ -87,7 +96,7 @@ class PdsExporter
         // A solo parent has no box of their own on this form. They tick
         // Other/s, and the word goes in the text cell beside it.
         if ($record->civil_status === CivilStatus::SoloParent) {
-            $this->put($sheet, $cells['civil_status_other'], $record->civil_status->label());
+            $this->writer->put($sheet, $cells['civil_status_other'], $record->civil_status->label());
         }
 
         if ($record->citizenship !== null) {
@@ -105,28 +114,6 @@ class PdsExporter
         });
     }
 
-    /**
-     * Ticks one box of a group.
-     *
-     * The boxes are Excel form controls, each linked to a cell holding TRUE or
-     * FALSE. Writing the option's text into that cell would replace the
-     * control's value and leave the box empty on the printed page.
-     */
-    private function tick(Worksheet $sheet, string $group, ?string $option): void
-    {
-        if ($option === null) {
-            return;
-        }
-
-        $cell = config("pds_template.ticks.{$group}.{$option}");
-
-        if ($cell === null) {
-            return;
-        }
-
-        $sheet->setCellValueExplicit($cell, true, DataType::TYPE_BOOL);
-    }
-
     private function writeFamilyBackground(Spreadsheet $book, Employee $employee): void
     {
         $record = $employee->familyBackground;
@@ -138,21 +125,165 @@ class PdsExporter
         $sheet = $this->sheet($book, 'family_background');
 
         foreach ($this->map->cells('family_background') as $field => $reference) {
-            $this->put($sheet, $reference, $record->{$field} ?? null);
+            $this->writer->put($sheet, $reference, $record->{$field} ?? null);
+        }
+    }
+
+    private function writeChildren(Spreadsheet $book, Employee $employee): void
+    {
+        $this->sections->write($book, 'children', $employee->children
+            ->map(fn ($child) => [
+                'name' => $child->name,
+                'date_of_birth' => $child->date_of_birth,
+            ])
+            ->all());
+    }
+
+    /**
+     * The printed form gives one row per level and no more. A second degree at
+     * the same level is not dropped — it goes to the C8 continuation sheet,
+     * which carries a level column of its own for exactly this.
+     */
+    private function writeEducation(Spreadsheet $book, Employee $employee): void
+    {
+        $section = $this->map->section('education');
+        $sheet = $book->getSheetByName($this->map->sheet($section['sheet']));
+
+        $seen = [];
+        $overflow = [];
+
+        foreach ($employee->educations as $education) {
+            $level = $education->level?->value;
+            $row = $section['rows_by_level'][$level] ?? null;
+
+            if ($row === null || isset($seen[$level])) {
+                $overflow[] = $this->educationRow($education, withLevel: true);
+
+                continue;
+            }
+
+            $seen[$level] = true;
+
+            foreach ($section['columns'] as $field => $column) {
+                $this->writer->put($sheet, $column.$row, $education->{$field});
+            }
+        }
+
+        if ($overflow === []) {
+            return;
+        }
+
+        $continuation = $section['continuation'];
+        $sheet = $book->getSheetByName($this->map->sheet($continuation['sheet']));
+
+        foreach (array_slice($overflow, 0, $continuation['row_count']) as $offset => $row) {
+            foreach ($continuation['columns'] as $field => $column) {
+                $this->writer->put($sheet, $column.($continuation['first_row'] + $offset), $row[$field] ?? null);
+            }
+        }
+    }
+
+    /** @return array<string, mixed> */
+    private function educationRow(object $education, bool $withLevel): array
+    {
+        $row = [
+            'school_name' => $education->school_name,
+            'degree_course' => $education->degree_course,
+            'period_from' => $education->period_from,
+            'period_to' => $education->period_to,
+            'highest_level_units' => $education->highest_level_units,
+            'year_graduated' => $education->year_graduated,
+            'honors' => $education->honors,
+        ];
+
+        return $withLevel ? ['level' => $education->level] + $row : $row;
+    }
+
+    private function writeRepeatingSections(Spreadsheet $book, Employee $employee): void
+    {
+        $sections = [
+            'eligibility' => [$employee->eligibilities, [
+                'eligibility', 'rating', 'examination_date', 'examination_place',
+                'license_number', 'license_validity',
+            ]],
+            'work_experience' => [$employee->workExperiences, [
+                'date_from', 'date_to', 'position_title', 'department_agency',
+                'monthly_salary', 'salary_grade_step', 'status_of_appointment',
+                'is_government_service',
+            ]],
+            'learning_development' => [$employee->learningDevelopments, [
+                'title', 'date_from', 'date_to', 'number_of_hours', 'type', 'conducted_by',
+            ]],
+            'voluntary_work' => [$employee->voluntaryWorks, [
+                'organization_name_address', 'date_from', 'date_to',
+                'number_of_hours', 'position_nature_of_work',
+            ]],
+        ];
+
+        foreach ($sections as $key => [$records, $fields]) {
+            $this->sections->write($book, $key, $records
+                ->map(fn ($record) => collect($fields)
+                    ->mapWithKeys(fn (string $field) => [$field => $record->{$field}])
+                    ->all())
+                ->all());
         }
     }
 
     /**
-     * The 2026 revision prints a date beside the signature on every page.
-     * The signature box itself is left alone until the HR office says what
-     * belongs in it.
+     * Items 31 to 33 print side by side in the same rows, each its own list.
+     * They overflow independently, so each column is written on its own.
+     */
+    private function writeOtherInformation(Spreadsheet $book, Employee $employee): void
+    {
+        $section = $this->map->section('other_information');
+        $continuation = $section['continuation'];
+
+        $sheet = $book->getSheetByName($this->map->sheet($section['sheet']));
+        $contSheet = $book->getSheetByName($this->map->sheet($continuation['sheet']));
+
+        foreach (OtherEntryKind::cases() as $kind) {
+            $values = $employee->otherEntries
+                ->where('kind', $kind)
+                ->pluck('value')
+                ->values()
+                ->all();
+
+            $column = $section['columns'][$kind->value];
+
+            foreach (array_slice($values, 0, $section['row_count']) as $offset => $value) {
+                $this->writer->put($sheet, $column.($section['first_row'] + $offset), $value);
+            }
+
+            $overflow = array_slice($values, $section['row_count'], $continuation['row_count']);
+            $contColumn = $continuation['columns'][$kind->value];
+
+            foreach ($overflow as $offset => $value) {
+                $this->writer->put($contSheet, $contColumn.($continuation['first_row'] + $offset), $value);
+            }
+        }
+    }
+
+    /**
+     * The 2026 revision prints a date beside the signature on every page. The
+     * signature box itself is left alone until the HR office says what belongs
+     * in it.
      */
     private function writePageDates(Spreadsheet $book): void
     {
         foreach (config('pds_template.page_dates') as $page) {
             $sheet = $book->getSheetByName($this->map->sheet($page['sheet']));
 
-            $this->put($sheet, $page['cell'], now());
+            $this->writer->put($sheet, $page['cell'], now());
+        }
+    }
+
+    /** Ticks one box of a group; a null option ticks nothing. */
+    private function tick(Worksheet $sheet, string $group, ?string $option): void
+    {
+        $cell = $option === null ? null : config("pds_template.ticks.{$group}.{$option}");
+
+        if ($cell !== null) {
+            $this->writer->tick($sheet, $cell);
         }
     }
 
@@ -161,47 +292,5 @@ class PdsExporter
         return $book->getSheetByName(
             $this->map->sheet($this->map->section($section)['sheet'])
         );
-    }
-
-    /**
-     * Everything reaches the sheet as text.
-     *
-     * A date written as a spreadsheet serial renders in whatever the reader's
-     * locale decides, and this form asks for dd/mm/yyyy on every date field.
-     * An enum written raw would print `solo_parent` where the form expects
-     * "Solo Parent".
-     */
-    private function put(Worksheet $sheet, string $reference, mixed $value): void
-    {
-        if ($value === null || $value === '') {
-            return;
-        }
-
-        $sheet->setCellValueExplicit(
-            $reference,
-            $this->asText($value),
-            DataType::TYPE_STRING,
-        );
-    }
-
-    private function asText(mixed $value): string
-    {
-        if ($value instanceof DateTimeInterface) {
-            return $value->format($this->map->dateFormat());
-        }
-
-        if ($value instanceof BackedEnum) {
-            return method_exists($value, 'label') ? $value->label() : (string) $value->value;
-        }
-
-        if (is_bool($value)) {
-            return $value ? 'Y' : 'N';
-        }
-
-        if ($value instanceof Model) {
-            return (string) $value->getKey();
-        }
-
-        return (string) $value;
     }
 }

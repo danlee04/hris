@@ -193,12 +193,21 @@ return [
      */
     'children' => [
         'sheet' => 'page_1',
-        'continuation' => 'family_background_cont',
         'first_row' => 37,
         'row_count' => 13,
         'columns' => [
             'name' => 'I',
             'date_of_birth' => 'M',
+        ],
+        'continuation' => [
+            'sheet' => 'family_background_cont',
+            'first_row' => 4,
+            'row_count' => 150,
+            // The date of birth sits in L here and in M on page 1.
+            'columns' => [
+                'name' => 'I',
+                'date_of_birth' => 'L',
+            ],
         ],
     ],
 
@@ -213,7 +222,6 @@ return [
      */
     'education' => [
         'sheet' => 'page_1',
-        'continuation' => 'education_cont',
         'rows_by_level' => [
             'elementary' => 55,
             'secondary' => 56,
@@ -229,6 +237,178 @@ return [
             'highest_level_units' => 'L',
             'year_graduated' => 'M',
             'honors' => 'N',
+        ],
+        'continuation' => [
+            'sheet' => 'education_cont',
+            'first_row' => 6,
+            'row_count' => 35,
+            // The continuation carries a level column of its own, because
+            // nothing on that sheet says which level a row belongs to.
+            'columns' => [
+                'level' => 'A',
+                'school_name' => 'D',
+                'degree_course' => 'G',
+                'period_from' => 'J',
+                'period_to' => 'K',
+                'highest_level_units' => 'L',
+                'year_graduated' => 'M',
+                'honors' => 'N',
+            ],
+        ],
+    ],
+
+    /*
+     * IV. CIVIL SERVICE ELIGIBILITY — item 27, sheet C2.
+     *
+     * Note that the continuation sheet puts the licence number and validity in
+     * different columns from the main page. Every continuation carries its own
+     * column map for that reason; assuming they match would put the licence
+     * number under "place of examination".
+     */
+    'eligibility' => [
+        'sheet' => 'page_2',
+        'first_row' => 5,
+        'row_count' => 7,
+        'columns' => [
+            'eligibility' => 'A',
+            'rating' => 'F',
+            'examination_date' => 'G',
+            'examination_place' => 'I',
+            'license_number' => 'L',
+            'license_validity' => 'M',
+        ],
+        'continuation' => [
+            'sheet' => 'eligibility_cont',
+            'first_row' => 5,
+            'row_count' => 100,
+            'columns' => [
+                'eligibility' => 'A',
+                'rating' => 'F',
+                'examination_date' => 'G',
+                'examination_place' => 'I',
+                'license_number' => 'J',
+                'license_validity' => 'K',
+            ],
+        ],
+    ],
+
+    /*
+     * V. WORK EXPERIENCE — item 28, sheet C2. The longest section on the form
+     * and the one that overflows most often.
+     */
+    'work_experience' => [
+        'sheet' => 'page_2',
+        'first_row' => 18,
+        'row_count' => 24,
+        'columns' => [
+            'date_from' => 'A',
+            'date_to' => 'C',
+            'position_title' => 'D',
+            'department_agency' => 'G',
+            'monthly_salary' => 'J',
+            'salary_grade_step' => 'K',
+            'status_of_appointment' => 'L',
+            'is_government_service' => 'M',
+        ],
+        'continuation' => [
+            'sheet' => 'work_experience_cont',
+            'first_row' => 7,
+            'row_count' => 50,
+            'columns' => [
+                'date_from' => 'A',
+                'date_to' => 'C',
+                'position_title' => 'D',
+                'department_agency' => 'G',
+                'monthly_salary' => 'J',
+                'salary_grade_step' => 'K',
+                'status_of_appointment' => 'L',
+                'is_government_service' => 'M',
+            ],
+        ],
+    ],
+
+    /*
+     * VI. LEARNING AND DEVELOPMENT — item 29, sheet C3.
+     */
+    'learning_development' => [
+        'sheet' => 'page_3',
+        'first_row' => 5,
+        'row_count' => 17,
+        'columns' => [
+            'title' => 'A',
+            'date_from' => 'E',
+            'date_to' => 'F',
+            'number_of_hours' => 'G',
+            'type' => 'H',
+            'conducted_by' => 'I',
+        ],
+        'continuation' => [
+            'sheet' => 'learning_development_cont',
+            'first_row' => 6,
+            'row_count' => 120,
+            'columns' => [
+                'title' => 'A',
+                'date_from' => 'E',
+                'date_to' => 'F',
+                'number_of_hours' => 'G',
+                'type' => 'H',
+                'conducted_by' => 'I',
+            ],
+        ],
+    ],
+
+    /*
+     * VII. VOLUNTARY WORK — item 30, sheet C3.
+     */
+    'voluntary_work' => [
+        'sheet' => 'page_3',
+        'first_row' => 27,
+        'row_count' => 9,
+        'columns' => [
+            'organization_name_address' => 'A',
+            'date_from' => 'E',
+            'date_to' => 'F',
+            'number_of_hours' => 'G',
+            'position_nature_of_work' => 'H',
+        ],
+        'continuation' => [
+            'sheet' => 'voluntary_work_cont',
+            'first_row' => 6,
+            'row_count' => 60,
+            'columns' => [
+                'organization_name_address' => 'A',
+                'date_from' => 'E',
+                'date_to' => 'F',
+                'number_of_hours' => 'G',
+                'position_nature_of_work' => 'H',
+            ],
+        ],
+    ],
+
+    /*
+     * VIII. OTHER INFORMATION — items 31 to 33, sheet C3.
+     *
+     * Three lists printed side by side in the same rows, not one list. Each
+     * column is its own sequence and overflows independently.
+     */
+    'other_information' => [
+        'sheet' => 'page_3',
+        'first_row' => 39,
+        'row_count' => 7,
+        'columns' => [
+            'skill_hobby' => 'A',
+            'distinction' => 'C',
+            'membership' => 'I',
+        ],
+        'continuation' => [
+            'sheet' => 'other_information_cont',
+            'first_row' => 4,
+            'row_count' => 50,
+            'columns' => [
+                'skill_hobby' => 'A',
+                'distinction' => 'C',
+                'membership' => 'I',
+            ],
         ],
     ],
 
