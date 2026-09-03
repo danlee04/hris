@@ -17,4 +17,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::livewire('pds/work-experience', 'pages::pds.work-experience')
         ->name('pds.work-experience');
+
+    Route::livewire('pds/voluntary-work', 'pages::pds.voluntary-work')
+        ->name('pds.voluntary-work');
+
+    Route::livewire('pds/learning-development', 'pages::pds.learning-development')
+        ->name('pds.learning-development');
 });

@@ -7,7 +7,9 @@ use App\Models\Pds\Child;
 use App\Models\Pds\Education;
 use App\Models\Pds\Eligibility;
 use App\Models\Pds\FamilyBackground;
+use App\Models\Pds\LearningDevelopment;
 use App\Models\Pds\PersonalInformation;
+use App\Models\Pds\VoluntaryWork;
 use App\Models\Pds\WorkExperience;
 use Database\Factories\EmployeeFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -140,6 +142,18 @@ class Employee extends Model
     public function workExperiences(): HasMany
     {
         return $this->hasMany(WorkExperience::class)->orderBy('sort_order');
+    }
+
+    /** CS Form 212 item 29. */
+    public function voluntaryWorks(): HasMany
+    {
+        return $this->hasMany(VoluntaryWork::class)->orderBy('sort_order');
+    }
+
+    /** CS Form 212 item 30. */
+    public function learningDevelopments(): HasMany
+    {
+        return $this->hasMany(LearningDevelopment::class)->orderBy('sort_order');
     }
 
     /** Surname first, the way HR reads a list. */
