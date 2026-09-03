@@ -12,6 +12,8 @@
         'pds.personal-information' => __('Personal information'),
         'pds.family-background' => __('Family background'),
         'pds.education' => __('Education'),
+        'pds.eligibility' => __('Eligibility'),
+        'pds.work-experience' => __('Work experience'),
     ];
 
     $query = $employee ? ['employee' => $employee] : [];

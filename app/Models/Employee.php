@@ -5,8 +5,10 @@ namespace App\Models;
 use App\Enums\EmploymentStatus;
 use App\Models\Pds\Child;
 use App\Models\Pds\Education;
+use App\Models\Pds\Eligibility;
 use App\Models\Pds\FamilyBackground;
 use App\Models\Pds\PersonalInformation;
+use App\Models\Pds\WorkExperience;
 use Database\Factories\EmployeeFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Builder;
@@ -126,6 +128,18 @@ class Employee extends Model
     public function educations(): HasMany
     {
         return $this->hasMany(Education::class)->orderBy('sort_order');
+    }
+
+    /** CS Form 212 item 27. */
+    public function eligibilities(): HasMany
+    {
+        return $this->hasMany(Eligibility::class)->orderBy('sort_order');
+    }
+
+    /** CS Form 212 item 28. */
+    public function workExperiences(): HasMany
+    {
+        return $this->hasMany(WorkExperience::class)->orderBy('sort_order');
     }
 
     /** Surname first, the way HR reads a list. */
