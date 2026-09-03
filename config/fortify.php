@@ -161,7 +161,8 @@ return [
     */
 
     'features' => [
-        Features::registration(),
+        // Features::registration() is deliberately absent. An admin issues
+        // every login; see the Phase 1a plan, Task 4.
         Features::resetPasswords(),
         Features::emailVerification(),
         Features::twoFactorAuthentication([
