@@ -69,11 +69,10 @@ return [
             'middle_name' => 'D12',
             'name_extension' => 'N11',
 
-            // 3-9
+            // 3-9. Sex and civil status are ticks, not text — see 'ticks' below.
             'date_of_birth' => 'D13',
             'place_of_birth' => 'D15',
-            'sex' => 'E16',
-            'civil_status' => 'E17',
+            'civil_status_other' => 'E20',
             'height_m' => 'D22',
             'weight_kg' => 'D24',
             'blood_type' => 'D25',
@@ -86,8 +85,7 @@ return [
             'tin_no' => 'D33',
             'agency_employee_no' => 'D34',
 
-            // 16
-            'citizenship' => 'K13',
+            // 16. Citizenship itself is a tick; only the country is typed.
             'dual_citizenship_country' => 'L16',
 
             // 17 — residential address. Captions sit one row below each box.
@@ -112,6 +110,47 @@ return [
             'telephone_no' => 'I32',
             'mobile_no' => 'I33',
             'email_address' => 'I34',
+        ],
+    ],
+
+    /*
+     * Checkboxes.
+     *
+     * The form says so itself at the top of C1: "Tick appropriate boxes (☐)".
+     * These are real Excel form controls, each linked to a cell that holds
+     * TRUE or FALSE — writing the word "Female" into E16 would replace the
+     * control's own value with text and leave the box unticked.
+     *
+     * The cell for every box was read out of xl/drawings/vmlDrawing1.vml,
+     * where each control carries its label and its <x:FmlaLink>. The labels
+     * are drawings, not cell values, which is why they cannot be found by
+     * reading the sheet.
+     *
+     * Note what the printed form actually offers for civil status: Single,
+     * Married, Widowed, Separated, Other/s. There is no Solo Parent box, so a
+     * solo parent ticks Other/s and the word goes in the text cell beside it.
+     */
+    'ticks' => [
+        'citizenship' => [
+            'filipino' => 'J13',
+            'dual' => 'K13',
+        ],
+        'dual_citizenship_by' => [
+            'by_birth' => 'L14',
+            'by_naturalization' => 'M14',
+        ],
+        'sex' => [
+            'male' => 'D16',
+            'female' => 'E16',
+        ],
+        'civil_status' => [
+            'single' => 'D17',
+            'married' => 'E17',
+            'widowed' => 'D18',
+            'separated' => 'E19',
+            'other' => 'D20',
+            // No box of its own on the form.
+            'solo_parent' => 'D20',
         ],
     ],
 
