@@ -59,7 +59,7 @@ new #[Title('Civil service eligibility')] class extends Component {
 
 <section class="w-full">
     <flux:heading size="xl">{{ __('Civil service eligibility') }}</flux:heading>
-    <flux:subheading>{{ __('CS Form 212, item 27. List every eligibility and licence you hold.') }}</flux:subheading>
+    <flux:subheading>{{ __('CS Form 212 (Revised 2026), item 27. List every eligibility and licence you hold.') }}</flux:subheading>
 
     <x-pds.section-nav :employee="request()->integer('employee') ?: null" class="mt-6" />
 

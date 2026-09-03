@@ -67,7 +67,7 @@ new #[Title('Work experience')] class extends Component {
 <section class="w-full">
     <flux:heading size="xl">{{ __('Work experience') }}</flux:heading>
     <flux:subheading>
-        {{ __('CS Form 212, item 28. Leave "To" blank for a post you still hold.') }}
+        {{ __('CS Form 212 (Revised 2026), item 28. Leave "To" blank for a post you still hold.') }}
     </flux:subheading>
 
     <x-pds.section-nav :employee="request()->integer('employee') ?: null" class="mt-6" />

@@ -15,7 +15,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
     'employee_id',
     'date_of_birth', 'place_of_birth', 'sex', 'civil_status', 'civil_status_other',
     'height_m', 'weight_kg', 'blood_type',
-    'gsis_id', 'pagibig_id', 'philhealth_no', 'sss_no', 'tin_no',
+    'umid_id', 'pagibig_id', 'philhealth_no', 'tin_no',
     'agency_employee_no', 'philsys_id',
     'citizenship', 'dual_citizenship_by', 'dual_citizenship_country',
     'res_house_no', 'res_street', 'res_subdivision', 'res_barangay',

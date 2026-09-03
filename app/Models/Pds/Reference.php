@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-#[Fillable(['employee_id', 'name', 'address', 'telephone_no', 'sort_order'])]
+#[Fillable(['employee_id', 'name', 'address', 'contact_details', 'sort_order'])]
 class Reference extends Model
 {
     /** @use HasFactory<ReferenceFactory> */

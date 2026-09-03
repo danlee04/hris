@@ -66,7 +66,7 @@ new #[Title('Educational background')] class extends Component {
 
 <section class="w-full">
     <flux:heading size="xl">{{ __('Educational background') }}</flux:heading>
-    <flux:subheading>{{ __('CS Form 212, items 21 to 26. Add as many entries per level as you hold.') }}</flux:subheading>
+    <flux:subheading>{{ __('CS Form 212 (Revised 2026), item 26. Add as many entries per level as you hold.') }}</flux:subheading>
 
     <x-pds.section-nav :employee="request()->integer('employee') ?: null" class="mt-6" />
 

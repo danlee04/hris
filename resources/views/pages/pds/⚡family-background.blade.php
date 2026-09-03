@@ -74,7 +74,7 @@ new #[Title('Family background')] class extends Component {
 
 <section class="w-full">
     <flux:heading size="xl">{{ __('Family background') }}</flux:heading>
-    <flux:subheading>{{ __('CS Form 212, items 17 to 20.') }}</flux:subheading>
+    <flux:subheading>{{ __('CS Form 212 (Revised 2026), items 22 to 25.') }}</flux:subheading>
 
     <x-pds.section-nav :employee="request()->integer('employee') ?: null" class="mt-6" />
 

@@ -59,7 +59,7 @@ new #[Title('Learning and development')] class extends Component {
 <section class="w-full">
     <flux:heading size="xl">{{ __('Learning and development') }}</flux:heading>
     <flux:subheading>
-        {{ __('CS Form 212, item 30. Training programmes, seminars and workshops attended.') }}
+        {{ __('CS Form 212 (Revised 2026), item 29. Training programmes, seminars and workshops attended.') }}
     </flux:subheading>
 
     <x-pds.section-nav :employee="request()->integer('employee') ?: null" class="mt-6" />

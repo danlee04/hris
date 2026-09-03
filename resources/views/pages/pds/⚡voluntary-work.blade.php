@@ -57,7 +57,7 @@ new #[Title('Voluntary work')] class extends Component {
 <section class="w-full">
     <flux:heading size="xl">{{ __('Voluntary work') }}</flux:heading>
     <flux:subheading>
-        {{ __('CS Form 212, item 29. Involvement in civic or non-government organizations.') }}
+        {{ __('CS Form 212 (Revised 2026), item 30. Involvement in civic or non-government organizations.') }}
     </flux:subheading>
 
     <x-pds.section-nav :employee="request()->integer('employee') ?: null" class="mt-6" />

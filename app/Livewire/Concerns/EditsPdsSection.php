@@ -3,6 +3,7 @@
 namespace App\Livewire\Concerns;
 
 use App\Models\Employee;
+use App\Services\AuditRecorder;
 
 /**
  * Every PDS section answers the same two questions before it renders: whose
@@ -41,6 +42,8 @@ trait EditsPdsSection
         // different record than the one that was authorised here.
         $this->employeeId = $employee->id;
 
+        $this->recordReadIfSomebodyElses($employee);
+
         return $employee;
     }
 
@@ -59,5 +62,32 @@ trait EditsPdsSection
         $this->authorize('updatePds', $employee);
 
         return $employee;
+    }
+
+    /**
+     * An employee opening their own PDS is not worth recording — it would bury
+     * the entries that matter under thousands that do not. Somebody else
+     * opening it is the whole reason the audit log exists: edits are rare, and
+     * looking up a colleague's home address or their answer to item 35 is not.
+     */
+    private function recordReadIfSomebodyElses(Employee $employee): void
+    {
+        if ($employee->user_id === auth()->id()) {
+            return;
+        }
+
+        app(AuditRecorder::class)->recordRead(
+            $employee,
+            'Opened the PDS section: '.$this->pdsSectionName(),
+        );
+    }
+
+    /** "pages::pds.work-experience" reads better in a log than a class hash. */
+    private function pdsSectionName(): string
+    {
+        return str(request()->route()?->getName() ?? static::class)
+            ->afterLast('pds.')
+            ->replace('-', ' ')
+            ->toString();
     }
 }

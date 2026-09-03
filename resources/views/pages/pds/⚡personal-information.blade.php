@@ -50,10 +50,9 @@ new #[Title('Personal information')] class extends Component {
             'form.height_m' => ['nullable', 'numeric', 'between:0.5,2.5'],
             'form.weight_kg' => ['nullable', 'numeric', 'between:20,300'],
             'form.blood_type' => ['nullable', 'string', 'max:10'],
-            'form.gsis_id' => ['nullable', 'string', 'max:40'],
+            'form.umid_id' => ['nullable', 'string', 'max:40'],
             'form.pagibig_id' => ['nullable', 'string', 'max:40'],
             'form.philhealth_no' => ['nullable', 'string', 'max:40'],
-            'form.sss_no' => ['nullable', 'string', 'max:40'],
             'form.tin_no' => ['nullable', 'string', 'max:40'],
             'form.agency_employee_no' => ['nullable', 'string', 'max:40'],
             'form.philsys_id' => ['nullable', 'string', 'max:40'],
@@ -100,7 +99,7 @@ new #[Title('Personal information')] class extends Component {
 
 <section class="w-full">
     <flux:heading size="xl">{{ __('Personal information') }}</flux:heading>
-    <flux:subheading>{{ __('CS Form 212, items 1 to 16.') }}</flux:subheading>
+    <flux:subheading>{{ __('CS Form 212 (Revised 2026), items 1 to 21.') }}</flux:subheading>
 
     <x-pds.section-nav :employee="request()->integer('employee') ?: null" class="mt-6" />
 
@@ -109,7 +108,7 @@ new #[Title('Personal information')] class extends Component {
             <flux:input wire:model="form.date_of_birth" type="date" :label="__('Date of birth')" />
             <flux:input wire:model="form.place_of_birth" :label="__('Place of birth')" />
 
-            <flux:select wire:model="form.sex" :label="__('Sex')" :placeholder="__('Choose')">
+            <flux:select wire:model="form.sex" :label="__('Sex at birth')" :placeholder="__('Choose')">
                 @foreach (App\Enums\Sex::cases() as $case)
                     <flux:select.option value="{{ $case->value }}">{{ $case->label() }}</flux:select.option>
                 @endforeach
@@ -130,13 +129,12 @@ new #[Title('Personal information')] class extends Component {
         <flux:separator :text="__('Identification numbers')" />
 
         <div class="grid gap-6 sm:grid-cols-2">
-            <flux:input wire:model="form.gsis_id" :label="__('GSIS ID no.')" />
+            <flux:input wire:model="form.umid_id" :label="__('UMID ID no.')" />
             <flux:input wire:model="form.pagibig_id" :label="__('PAG-IBIG ID no.')" />
             <flux:input wire:model="form.philhealth_no" :label="__('PhilHealth no.')" />
-            <flux:input wire:model="form.sss_no" :label="__('SSS no.')" />
             <flux:input wire:model="form.tin_no" :label="__('TIN no.')" />
             <flux:input wire:model="form.agency_employee_no" :label="__('Agency employee no.')" />
-            <flux:input wire:model="form.philsys_id" :label="__('PhilSys ID no.')" />
+            <flux:input wire:model="form.philsys_id" :label="__('PhilSys Card Number (PCN)')" />
         </div>
 
         <flux:separator :text="__('Residential address')" />

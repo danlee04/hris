@@ -13,7 +13,7 @@ new #[Title('Declarations')] class extends Component {
     /** @var array<string, mixed> */
     public array $form = [];
 
-    /** @var list<array{id: ?int, key: string, name: ?string, address: ?string, telephone_no: ?string}> */
+    /** @var list<array{id: ?int, key: string, name: ?string, address: ?string, contact_details: ?string}> */
     public array $references = [];
 
     public int $nextKey = 0;
@@ -39,7 +39,7 @@ new #[Title('Declarations')] class extends Component {
                 'key' => 'ref-'.$this->nextKey++,
                 'name' => $reference->name,
                 'address' => $reference->address,
-                'telephone_no' => $reference->telephone_no,
+                'contact_details' => $reference->contact_details,
             ])
             ->values()
             ->all();
@@ -57,7 +57,7 @@ new #[Title('Declarations')] class extends Component {
             'key' => 'ref-'.$this->nextKey++,
             'name' => '',
             'address' => '',
-            'telephone_no' => '',
+            'contact_details' => '',
         ];
     }
 
@@ -84,7 +84,7 @@ new #[Title('Declarations')] class extends Component {
             'form.date_accomplished' => ['nullable', 'date'],
             'references.*.name' => ['nullable', 'string', 'max:255'],
             'references.*.address' => ['nullable', 'string', 'max:500'],
-            'references.*.telephone_no' => ['nullable', 'string', 'max:60'],
+            'references.*.contact_details' => ['nullable', 'string', 'max:60'],
         ];
 
         // An unexplained yes cannot be saved. This is a document signed under
@@ -122,7 +122,7 @@ new #[Title('Declarations')] class extends Component {
                 'id' => $row['id'],
                 'name' => trim((string) $row['name']),
                 'address' => $row['address'],
-                'telephone_no' => $row['telephone_no'],
+                'contact_details' => $row['contact_details'],
             ], $this->references),
             fn (array $row) => $row['name'] !== ''
         ));
@@ -138,7 +138,7 @@ new #[Title('Declarations')] class extends Component {
 <section class="w-full">
     <flux:heading size="xl">{{ __('Declarations') }}</flux:heading>
     <flux:subheading>
-        {{ __('CS Form 212, items 34 to 42. Answer yes and the details become required.') }}
+        {{ __('CS Form 212 (Revised 2026), items 34 to 42. Answer yes and the details become required.') }}
     </flux:subheading>
 
     <x-pds.section-nav :employee="request()->integer('employee') ?: null" class="mt-6" />
@@ -226,8 +226,8 @@ new #[Title('Declarations')] class extends Component {
                 @foreach ($references as $index => $reference)
                     <div wire:key="{{ $reference['key'] }}" class="grid items-end gap-3 sm:grid-cols-[2fr_3fr_1fr_auto]">
                         <flux:input wire:model="references.{{ $index }}.name" :label="__('Name')" />
-                        <flux:input wire:model="references.{{ $index }}.address" :label="__('Address')" />
-                        <flux:input wire:model="references.{{ $index }}.telephone_no" :label="__('Telephone no.')" />
+                        <flux:input wire:model="references.{{ $index }}.address" :label="__('Office / residential address')" />
+                        <flux:input wire:model="references.{{ $index }}.contact_details" :label="__('Contact no. and/or email')" />
                         <flux:button
                             type="button"
                             wire:click="removeReference({{ $index }})"

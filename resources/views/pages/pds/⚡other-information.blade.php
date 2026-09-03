@@ -93,7 +93,7 @@ new #[Title('Other information')] class extends Component {
 
 <section class="w-full">
     <flux:heading size="xl">{{ __('Other information') }}</flux:heading>
-    <flux:subheading>{{ __('CS Form 212, items 31 to 33.') }}</flux:subheading>
+    <flux:subheading>{{ __('CS Form 212 (Revised 2026), items 31 to 33.') }}</flux:subheading>
 
     <x-pds.section-nav :employee="request()->integer('employee') ?: null" class="mt-6" />
 

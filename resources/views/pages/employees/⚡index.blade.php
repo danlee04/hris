@@ -65,6 +65,7 @@ new #[Title('Employees')] class extends Component {
             <flux:table.column>{{ __('Position') }}</flux:table.column>
             <flux:table.column>{{ __('Section') }}</flux:table.column>
             <flux:table.column>{{ __('Account') }}</flux:table.column>
+            <flux:table.column>{{ __('PDS') }}</flux:table.column>
         </flux:table.columns>
 
         <flux:table.rows>
@@ -81,10 +82,24 @@ new #[Title('Employees')] class extends Component {
                             <flux:badge color="zinc" size="sm">{{ __('None') }}</flux:badge>
                         @endif
                     </flux:table.cell>
+                    <flux:table.cell>
+                        {{-- Opening somebody else's PDS is recorded. The link is
+                             guarded so it does not appear to anyone who would
+                             only be shown a 403 on the other side. --}}
+                        @can('viewPds', $employee)
+                            <flux:link
+                                :href="route('pds.personal-information', ['employee' => $employee->id])"
+                                wire:navigate
+                                class="text-sm"
+                            >
+                                {{ __('Open') }}
+                            </flux:link>
+                        @endcan
+                    </flux:table.cell>
                 </flux:table.row>
             @empty
                 <flux:table.row>
-                    <flux:table.cell colspan="5" class="text-center">
+                    <flux:table.cell colspan="6" class="text-center">
                         {{ __('No employees yet. Import them from a CSV to get started.') }}
                     </flux:table.cell>
                 </flux:table.row>

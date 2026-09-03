@@ -128,7 +128,7 @@ class DeclarationsTest extends TestCase
             ->assertCount('references', 3)
             ->set('references.0.name', 'Cecilia Burre')
             ->set('references.0.address', 'Surigao City')
-            ->set('references.0.telephone_no', '09171234567')
+            ->set('references.0.contact_details', '09171234567')
             ->call('save')
             ->assertHasNoErrors();
 

@@ -18,7 +18,7 @@ class ReferenceFactory extends Factory
             'employee_id' => Employee::factory(),
             'name' => $this->faker->name(),
             'address' => $this->faker->address(),
-            'telephone_no' => '09171234567',
+            'contact_details' => '09171234567',
             'sort_order' => 0,
         ];
     }
