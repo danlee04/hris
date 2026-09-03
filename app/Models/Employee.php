@@ -3,6 +3,9 @@
 namespace App\Models;
 
 use App\Enums\EmploymentStatus;
+use App\Models\Pds\Child;
+use App\Models\Pds\FamilyBackground;
+use App\Models\Pds\PersonalInformation;
 use Database\Factories\EmployeeFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Builder;
@@ -10,6 +13,8 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Spatie\Activitylog\Models\Concerns\LogsActivity;
 use Spatie\Activitylog\Support\LogOptions;
@@ -96,6 +101,24 @@ class Employee extends Model
         return $this->belongsToMany(Designation::class, 'employee_designations')
             ->withPivot(['start_date', 'end_date', 'order_reference', 'is_active'])
             ->withTimestamps();
+    }
+
+    /** CS Form 212 items 1-16. */
+    public function personalInformation(): HasOne
+    {
+        return $this->hasOne(PersonalInformation::class);
+    }
+
+    /** CS Form 212 items 17, 19 and 20. */
+    public function familyBackground(): HasOne
+    {
+        return $this->hasOne(FamilyBackground::class);
+    }
+
+    /** CS Form 212 item 18, in the order the employee arranged them. */
+    public function children(): HasMany
+    {
+        return $this->hasMany(Child::class)->orderBy('sort_order');
     }
 
     /** Surname first, the way HR reads a list. */

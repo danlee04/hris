@@ -40,6 +40,36 @@ class EmployeePolicy
         return $user->can('users.manage');
     }
 
+    // -----------------------------------------------------------------
+    // The Personal Data Sheet
+    //
+    // These live here rather than in a PdsPolicy because Laravel resolves one
+    // policy per model, and the subject of both questions is the same
+    // Employee. A second policy class pointing at Employee would never be
+    // reached — `authorize('view', $employee)` would quietly keep asking
+    // EmployeePolicy, which answers a different question.
+    //
+    // The abilities are separate from the ones above on purpose: HR editing
+    // the employee master is not the same permission as HR correcting
+    // somebody's PDS, and an employee may do the second on their own record
+    // while never doing the first.
+    // -----------------------------------------------------------------
+
+    public function viewPds(User $user, Employee $employee): bool
+    {
+        return $this->owns($user, $employee) || $user->can('pds.view.any');
+    }
+
+    public function updatePds(User $user, Employee $employee): bool
+    {
+        return $this->owns($user, $employee) || $user->can('pds.edit.any');
+    }
+
+    public function exportPds(User $user, Employee $employee): bool
+    {
+        return $this->owns($user, $employee) || $user->can('pds.export.any');
+    }
+
     /**
      * Every imported row starts with a null user_id. Comparing two nulls would
      * hand the first employee without a login somebody else's record.

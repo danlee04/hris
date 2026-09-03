@@ -16,6 +16,12 @@
                         {{ __('Dashboard') }}
                     </flux:sidebar.item>
 
+                    @if (auth()->user()?->employee)
+                        <flux:sidebar.item icon="identification" :href="route('pds.personal-information')" :current="request()->routeIs('pds.*')" wire:navigate>
+                            {{ __('My PDS') }}
+                        </flux:sidebar.item>
+                    @endif
+
                     @can('viewAny', App\Models\Employee::class)
                         <flux:sidebar.item icon="users" :href="route('employees.index')" :current="request()->routeIs('employees.index')" wire:navigate>
                             {{ __('Employees') }}
