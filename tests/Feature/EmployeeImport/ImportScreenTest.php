@@ -130,6 +130,29 @@ class ImportScreenTest extends TestCase
         $this->assertSame(0, Employee::count());
     }
 
+    public function test_a_blocked_import_says_why_rather_than_going_quiet(): void
+    {
+        // A disabled button that says nothing looks like a broken one.
+        Livewire::actingAs($this->userWithRole('hr'))
+            ->test('pages::employees.import')
+            ->set('file', $this->upload(
+                "2014-0042,Juan,Santos,Dela Cruz,,Statistician II,ADMIN,STAT,permanent,2014-06-01,\n".
+                '2015-0100,Maria,Reyes,,,Statistician II,ADMIN,STAT,permanent,2015-01-05,'
+            ))
+            ->assertSee('Import is blocked')
+            ->assertSee('1 row(s) above still have problems');
+    }
+
+    public function test_a_clean_preview_shows_no_blocked_notice(): void
+    {
+        Livewire::actingAs($this->userWithRole('hr'))
+            ->test('pages::employees.import')
+            ->set('file', $this->upload(
+                '2014-0042,Juan,Santos,Dela Cruz,,Statistician II,ADMIN,STAT,permanent,2014-06-01,'
+            ))
+            ->assertDontSee('Import is blocked');
+    }
+
     public function test_a_row_that_became_a_duplicate_after_the_preview_is_caught_at_commit(): void
     {
         // Someone else imported the same employee between the preview and the

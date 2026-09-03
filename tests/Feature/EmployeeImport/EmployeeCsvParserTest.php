@@ -132,10 +132,42 @@ class EmployeeCsvParserTest extends TestCase
             '2014-0042,Juan,Santos,Dela Cruz,,Statistician II,ADMIN,STAT,casual,2014-06-01,'
         ));
 
+        // The message lists labels, not enum values — it is read by whoever has
+        // to go and fix the spreadsheet.
         $this->assertContains(
-            'employment_status [casual] is not one of: permanent, job_order, contract_of_service',
+            'employment_status [casual] is not one of: Permanent, Job Order, Contract of Service, Co-terminous',
             $preview->invalidRows()[0]->errors
         );
+    }
+
+    public function test_a_position_title_matches_whatever_case_hr_typed(): void
+    {
+        // The plantilla says MEDICAL OFFICER III; a roster typed by a person
+        // says Medical Officer III. Both are the same position.
+        Division::factory()->create(['code' => 'ADMIN']);
+        Section::factory()->create(['code' => 'STAT']);
+        Position::factory()->create(['title' => 'MEDICAL OFFICER III']);
+
+        $preview = app(EmployeeCsvParser::class)->parse($this->csv(
+            '2014-0042,Juan,Santos,Dela Cruz,,Medical Officer III,ADMIN,STAT,permanent,2014-06-01,'
+        ));
+
+        $this->assertFalse($preview->hasErrors());
+    }
+
+    public function test_an_employment_status_matches_its_label_as_well_as_its_value(): void
+    {
+        // A spreadsheet exported by a person says "Contract of Service", not
+        // "contract_of_service". Refusing that is a defect in the importer.
+        $this->seedReferenceData();
+
+        foreach (['Contract of Service', 'contract_of_service', 'Co-terminous', 'COTERMINOUS'] as $i => $written) {
+            $preview = app(EmployeeCsvParser::class)->parse($this->csv(
+                "2014-004{$i},Juan,Santos,Dela Cruz,,Statistician II,ADMIN,STAT,{$written},2014-06-01,"
+            ));
+
+            $this->assertFalse($preview->hasErrors(), "[{$written}] should have been accepted");
+        }
     }
 
     public function test_a_wrong_header_is_rejected_outright(): void

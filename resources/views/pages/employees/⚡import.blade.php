@@ -54,10 +54,22 @@ new #[Title('Import employees')] class extends Component {
             return;
         }
 
+        // Livewire keeps an upload in a temporary directory that is swept
+        // periodically. On a slow afternoon the preview can outlive the file
+        // behind it, and re-parsing a path that is gone throws.
+        $path = $this->file->getRealPath();
+
+        if ($path === false || ! is_readable($path)) {
+            $this->reset('file', 'previewRows', 'validCount', 'errorCount');
+            $this->addError('file', __('The upload expired. Please choose the file again.'));
+
+            return;
+        }
+
         // Re-parse rather than trusting the preview. Between the upload and
         // this click, someone else may have imported one of these employee
         // numbers — and the preview cannot know that.
-        $preview = app(EmployeeCsvParser::class)->parse($this->file->getRealPath());
+        $preview = app(EmployeeCsvParser::class)->parse($path);
 
         if ($preview->hasErrors()) {
             $this->show($preview);
@@ -146,13 +158,31 @@ new #[Title('Import employees')] class extends Component {
                 </flux:table.rows>
             </flux:table>
 
+            @if ($errorCount > 0)
+                {{-- A disabled button that says nothing looks like a broken one. --}}
+                <flux:callout class="mt-6" variant="warning" icon="exclamation-triangle">
+                    <flux:callout.heading>
+                        {{ __('Import is blocked') }}
+                    </flux:callout.heading>
+                    <flux:callout.text>
+                        {{ __(':count row(s) above still have problems. Nothing is imported while any row is wrong — importing the good half would leave you with no way to tell which half is missing. Fix them in the file, save it, and upload it again.', ['count' => $errorCount]) }}
+                    </flux:callout.text>
+                </flux:callout>
+            @endif
+
             <flux:button
                 class="mt-6"
                 variant="primary"
                 wire:click="commit"
+                wire:loading.attr="disabled"
                 :disabled="$errorCount > 0"
             >
-                {{ __('Import :count employees', ['count' => $validCount]) }}
+                <span wire:loading.remove wire:target="commit">
+                    {{ __('Import :count employees', ['count' => $validCount]) }}
+                </span>
+                <span wire:loading wire:target="commit">
+                    {{ __('Importing...') }}
+                </span>
             </flux:button>
         </div>
     @endif

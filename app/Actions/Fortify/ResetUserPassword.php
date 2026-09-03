@@ -24,6 +24,10 @@ class ResetUserPassword implements ResetsUserPasswords
 
         $user->forceFill([
             'password' => $input['password'],
+            // A forgotten temporary password is still a password change, so it
+            // lifts the hold too. Otherwise an employee who resets rather than
+            // changes stays locked to the security page.
+            'must_change_password' => false,
         ])->save();
     }
 }

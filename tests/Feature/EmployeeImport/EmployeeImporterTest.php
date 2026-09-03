@@ -122,4 +122,30 @@ class EmployeeImporterTest extends TestCase
     {
         $this->assertSame(0, app(EmployeeImporter::class)->import(new ImportPreview([])));
     }
+
+    public function test_it_resolves_the_same_references_the_parser_accepted(): void
+    {
+        // The parser and the importer share ReferenceData for this reason. When
+        // each built its own lookup, a preview could say a row was fine and the
+        // import could still write a null, with no visible symptom for months.
+        Division::factory()->create(['code' => 'ADMIN']);
+        Section::factory()->create(['code' => 'STAT']);
+        Position::factory()->create(['title' => 'MEDICAL OFFICER III']);
+
+        app(EmployeeImporter::class)->import(new ImportPreview([
+            $this->row(2, [
+                'position_title' => 'Medical Officer III',
+                'division_code' => 'admin',
+                'section_code' => 'stat',
+                'employment_status' => 'Co-terminous',
+            ]),
+        ]));
+
+        $employee = Employee::firstWhere('employee_number', '2014-0042');
+
+        $this->assertSame('MEDICAL OFFICER III', $employee->position->title);
+        $this->assertSame('ADMIN', $employee->division->code);
+        $this->assertSame('STAT', $employee->section->code);
+        $this->assertSame(EmploymentStatus::Coterminous, $employee->employment_status);
+    }
 }

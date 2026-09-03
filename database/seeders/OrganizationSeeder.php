@@ -69,13 +69,74 @@ class OrganizationSeeder extends Seeder
     ];
 
     /**
-     * Examples, not the plantilla.
+     * The plantilla, as the distinct titles held by staff in the legacy
+     * training system. Written the way the appointment papers write them.
      *
-     * @var array<int, array{0: string, 1: string, 2: int}> [title, item number, salary grade]
+     * Two corrections were made on the way in: "ADMINISTRATIVE ASSISSTANT II"
+     * was a misspelling of a title already on the list, so it was dropped, and
+     * "COMPUTER MAINTENACE TECHNOLOGIST II" was corrected to MAINTENANCE.
+     *
+     * Salary grades are not carried here — the legacy system never held them.
+     * Add them as the HR office confirms each one.
+     *
+     * @var list<string>
      */
     private const POSITIONS = [
-        ['Statistician II', 'OSEC-DOHB-STAT2-97-2014', 15],
-        ['Nurse I', 'OSEC-DOHB-NUR1-314-2014', 15],
+        'ACCOUNTANT II',
+        'ACCOUNTANT III',
+        'ACP WORKER',
+        'ADMINISTRATIVE AIDE I',
+        'ADMINISTRATIVE AIDE IV',
+        'ADMINISTRATIVE AIDE VI',
+        'ADMINISTRATIVE ASSISTANT I',
+        'ADMINISTRATIVE ASSISTANT II',
+        'ADMINISTRATIVE ASSISTANT III',
+        'ADMINISTRATIVE OFFICER II',
+        'ADMINISTRATIVE OFFICER III',
+        'ADMINISTRATIVE OFFICER IV',
+        'ADMINISTRATIVE OFFICER V',
+        'ATTORNEY III',
+        'CARPENTER',
+        'CHIEF OF HOSPITAL III',
+        'COMPUTER MAINTENANCE TECHNOLOGIST II',
+        'COOK I',
+        'COOK II',
+        'DENTAL AIDE',
+        'DENTIST II',
+        'DORMITORY AIDE',
+        'DORMITORY MANAGER II',
+        'DRIVER',
+        'ENGINEER I',
+        'ENGINEER III',
+        'GROUNDSMAN',
+        'HEALTH PROGRAM OFFICER I',
+        'HEALTH PROGRAM OFFICER II',
+        'HOUSEPARENT I',
+        'LABORATORY TECHNICIAN II',
+        'LEGAL ASSISTANT II',
+        'MEDICAL OFFICER III',
+        'MEDICAL SPECIALIST II',
+        'MEDICAL TECHNOLOGIST I',
+        'NURSE I',
+        'NURSE II',
+        'NURSE III',
+        'NURSING ATTENDANT II',
+        'NUTRITIONIST DIETITIAN I',
+        'OCCUPATIONAL THERAPY TECHNICIAN I',
+        'PLANNING OFFICER II',
+        'PSYCHOLOGIST III',
+        'PSYCHOMETRICIAN',
+        'RADIOLOGIC TECHNOLOGIST I',
+        'RADIOLOGIC TECHNOLOGIST II',
+        'RECOVERY COACH',
+        'SOCIAL WELFARE ASSISTANT',
+        'SOCIAL WELFARE OFFICER I',
+        'SOCIAL WELFARE OFFICER II',
+        'SOCIAL WELFARE OFFICER III',
+        'STATISTICIAN II',
+        'UTILITY',
+        'VEHICLE MECHANIC',
+        'WAREHOUSEMAN II',
     ];
 
     public function run(): void
@@ -93,11 +154,8 @@ class OrganizationSeeder extends Seeder
             ]);
         }
 
-        foreach (self::POSITIONS as [$title, $itemNumber, $salaryGrade]) {
-            Position::firstOrCreate(['item_number' => $itemNumber], [
-                'title' => $title,
-                'salary_grade' => $salaryGrade,
-            ]);
+        foreach (self::POSITIONS as $title) {
+            Position::firstOrCreate(['title' => $title]);
         }
     }
 }

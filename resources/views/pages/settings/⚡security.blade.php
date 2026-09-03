@@ -81,6 +81,10 @@ new #[Title('Security settings')] class extends Component {
 
         Auth::user()->update([
             'password' => $validated['password'],
+            // Clears the hold an admin-issued temporary password puts on this
+            // account. Without it the employee changes their password and is
+            // still sent back to this page forever.
+            'must_change_password' => false,
         ]);
 
         $this->reset('current_password', 'password', 'password_confirmation');

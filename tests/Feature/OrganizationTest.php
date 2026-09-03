@@ -52,7 +52,7 @@ class OrganizationTest extends TestCase
 
         $this->assertSame(4, Division::count());
         $this->assertSame(28, Section::count());
-        $this->assertSame(2, Position::count());
+        $this->assertSame(55, Position::count());
     }
 
     public function test_the_repeated_section_name_lands_in_two_different_divisions(): void

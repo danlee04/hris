@@ -3,10 +3,6 @@
 namespace App\Services\EmployeeImport;
 
 use App\Enums\EmploymentStatus;
-use App\Models\Division;
-use App\Models\Employee;
-use App\Models\Position;
-use App\Models\Section;
 use SplFileObject;
 
 /**
@@ -44,6 +40,11 @@ class EmployeeCsvParser
         $file = new SplFileObject($path);
         $file->setFlags(SplFileObject::READ_CSV | SplFileObject::SKIP_EMPTY | SplFileObject::DROP_NEW_LINE);
 
+        // An empty escape turns off PHP's proprietary backslash escaping, which
+        // no spreadsheet produces and which RFC 4180 does not describe. PHP 8.4
+        // deprecates leaving this unset; PHP 9 will require it.
+        $file->setCsvControl(',', '"', '');
+
         $header = $file->fgetcsv();
 
         if ($header !== self::COLUMNS) {
@@ -52,12 +53,7 @@ class EmployeeCsvParser
             ])]);
         }
 
-        // withTrashed: the unique index does not care that a row is soft
-        // deleted, so neither can this check.
-        $divisions = Division::pluck('id', 'code')->all();
-        $sections = Section::pluck('id', 'code')->all();
-        $positions = Position::pluck('id', 'title')->all();
-        $takenNumbers = Employee::withTrashed()->pluck('employee_number')->all();
+        $reference = ReferenceData::load();
 
         $rows = [];
         $seen = [];
@@ -81,7 +77,7 @@ class EmployeeCsvParser
                 )
             );
 
-            $errors = $this->errorsFor($data, $divisions, $sections, $positions, $takenNumbers, $seen);
+            $errors = $this->errorsFor($data, $reference, $seen);
 
             if ($data['employee_number'] !== '' && ! isset($seen[$data['employee_number']])) {
                 $seen[$data['employee_number']] = $lineNumber;
@@ -95,21 +91,11 @@ class EmployeeCsvParser
 
     /**
      * @param  array<string, string>  $data
-     * @param  array<string, int>  $divisions
-     * @param  array<string, int>  $sections
-     * @param  array<string, int>  $positions
-     * @param  list<string>  $takenNumbers
      * @param  array<string, int>  $seen
      * @return list<string>
      */
-    private function errorsFor(
-        array $data,
-        array $divisions,
-        array $sections,
-        array $positions,
-        array $takenNumbers,
-        array $seen,
-    ): array {
+    private function errorsFor(array $data, ReferenceData $reference, array $seen): array
+    {
         $errors = [];
 
         foreach (self::REQUIRED as $column) {
@@ -120,7 +106,7 @@ class EmployeeCsvParser
 
         $number = $data['employee_number'];
 
-        if ($number !== '' && in_array($number, $takenNumbers, true)) {
+        if ($number !== '' && $reference->numberIsTaken($number)) {
             $errors[] = "employee_number [{$number}] already exists";
         }
 
@@ -128,22 +114,22 @@ class EmployeeCsvParser
             $errors[] = "employee_number [{$number}] is repeated on line {$seen[$number]}";
         }
 
-        if ($data['division_code'] !== '' && ! isset($divisions[$data['division_code']])) {
+        if ($data['division_code'] !== '' && $reference->divisionId($data['division_code']) === null) {
             $errors[] = "division_code [{$data['division_code']}] does not exist";
         }
 
-        if ($data['section_code'] !== '' && ! isset($sections[$data['section_code']])) {
+        if ($data['section_code'] !== '' && $reference->sectionId($data['section_code']) === null) {
             $errors[] = "section_code [{$data['section_code']}] does not exist";
         }
 
-        if ($data['position_title'] !== '' && ! isset($positions[$data['position_title']])) {
+        if ($data['position_title'] !== '' && $reference->positionId($data['position_title']) === null) {
             $errors[] = "position_title [{$data['position_title']}] does not exist";
         }
 
         if ($data['employment_status'] !== ''
-            && ! in_array($data['employment_status'], EmploymentStatus::values(), true)) {
+            && EmploymentStatus::fromLoose($data['employment_status']) === null) {
             $errors[] = "employment_status [{$data['employment_status']}] is not one of: "
-                .implode(', ', EmploymentStatus::values());
+                .implode(', ', EmploymentStatus::labels());
         }
 
         if ($data['date_hired'] !== '' && strtotime($data['date_hired']) === false) {

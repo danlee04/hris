@@ -2,10 +2,8 @@
 
 namespace App\Services\EmployeeImport;
 
-use App\Models\Division;
+use App\Enums\EmploymentStatus;
 use App\Models\Employee;
-use App\Models\Position;
-use App\Models\Section;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 
@@ -29,11 +27,11 @@ class EmployeeImporter
             );
         }
 
-        $divisions = Division::pluck('id', 'code')->all();
-        $sections = Section::pluck('id', 'code')->all();
-        $positions = Position::pluck('id', 'title')->all();
+        // The same lookups the parser validated against. Building a second set
+        // here is how a preview that said "OK" ends up writing a null.
+        $reference = ReferenceData::load();
 
-        return DB::transaction(function () use ($preview, $divisions, $sections, $positions) {
+        return DB::transaction(function () use ($preview, $reference) {
             $created = 0;
 
             foreach ($preview->rows as $row) {
@@ -45,10 +43,12 @@ class EmployeeImporter
                     'middle_name' => $this->nullIfBlank($data['middle_name']),
                     'last_name' => $data['last_name'],
                     'suffix' => $this->nullIfBlank($data['suffix']),
-                    'position_id' => $positions[$data['position_title']] ?? null,
-                    'division_id' => $divisions[$data['division_code']] ?? null,
-                    'section_id' => $sections[$data['section_code']] ?? null,
-                    'employment_status' => $data['employment_status'] ?: 'permanent',
+                    'position_id' => $reference->positionId($data['position_title']),
+                    'division_id' => $reference->divisionId($data['division_code']),
+                    'section_id' => $reference->sectionId($data['section_code']),
+                    'employment_status' => (
+                        EmploymentStatus::fromLoose($data['employment_status']) ?? EmploymentStatus::Permanent
+                    )->value,
                     'date_hired' => $this->nullIfBlank($data['date_hired']),
                     'biometric_id' => $this->nullIfBlank($data['biometric_id']),
                     'is_active' => true,
