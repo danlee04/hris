@@ -2923,8 +2923,8 @@ class AuditTrailTest extends TestCase
 
         $this->assertNotNull($activity);
         $this->assertSame($hr->id, $activity->causer_id);
-        $this->assertSame('Dela Cruz', $activity->properties['old']['last_name']);
-        $this->assertSame('Dela Cruz-Reyes', $activity->properties['attributes']['last_name']);
+        $this->assertSame('Dela Cruz', $activity->attribute_changes['old']['last_name']);
+        $this->assertSame('Dela Cruz-Reyes', $activity->attribute_changes['attributes']['last_name']);
     }
 
     public function test_a_read_is_recorded_with_its_causer(): void
@@ -2970,8 +2970,8 @@ Expected: FAIL — no activity is recorded, and `Route [audit.index] not defined
 In `app/Models/Employee.php`, add the trait and its configuration:
 
 ```php
-use Spatie\Activitylog\LogOptions;
-use Spatie\Activitylog\Traits\LogsActivity;
+use Spatie\Activitylog\Models\Concerns\LogsActivity;
+use Spatie\Activitylog\Support\LogOptions;
 
 class Employee extends Model
 {
@@ -2984,13 +2984,25 @@ class Employee extends Model
     public function getActivitylogOptions(): LogOptions
     {
         return LogOptions::defaults()
-            ->logOnly($this->fillable)
+            ->logFillable()
             ->logOnlyDirty()
-            ->dontSubmitEmptyLogs();
+            ->dontLogEmptyChanges();
     }
 ```
 
 `logOnlyDirty()` keeps the log to what actually changed. Without it every save writes all fourteen columns and the log becomes unreadable within a month.
+
+**activitylog v5 moved three things** from where v4 had them, and all three were wrong in the first draft of this plan:
+
+| v4 | v5 |
+| --- | --- |
+| `Spatie\Activitylog\Traits\LogsActivity` | `Spatie\Activitylog\Models\Concerns\LogsActivity` |
+| `Spatie\Activitylog\LogOptions` | `Spatie\Activitylog\Support\LogOptions` |
+| `dontSubmitEmptyLogs()` | `dontLogEmptyChanges()` |
+
+And the important one: **the before/after values live in a new `attribute_changes` column, not in `properties`.** `properties` is now for arbitrary extra data and stays empty for model events. Reading `$activity->properties['attributes']` returns nothing, silently — the log page renders, the rows are there, and the Changed column is simply blank.
+
+Use `logFillable()` rather than `logOnly($this->getFillable())`: the model declares its fillable through Laravel 13's `#[Fillable]` attribute, and `logFillable()` defers the lookup to the point where it resolves correctly.
 
 - [ ] **Step 5: Write the recorder**
 
@@ -3076,10 +3088,10 @@ new #[Title('Audit log')] class extends Component {
                         {{ class_basename($activity->subject_type) }} #{{ $activity->subject_id }}
                     </flux:table.cell>
                     <flux:table.cell class="text-sm">
-                        @foreach ($activity->properties['attributes'] ?? [] as $field => $value)
+                        @foreach ($activity->attribute_changes['attributes'] ?? [] as $field => $value)
                             <div>
                                 <span class="font-medium">{{ $field }}</span>:
-                                <span class="text-zinc-500">{{ $activity->properties['old'][$field] ?? '—' }}</span>
+                                <span class="text-zinc-500">{{ $activity->attribute_changes['old'][$field] ?? '—' }}</span>
                                 →
                                 <span>{{ $value }}</span>
                             </div>

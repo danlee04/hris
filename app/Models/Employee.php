@@ -11,6 +11,8 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Spatie\Activitylog\Models\Concerns\LogsActivity;
+use Spatie\Activitylog\Support\LogOptions;
 
 /**
  * The HR record for a person. Separate from `users`, which holds only login
@@ -38,7 +40,23 @@ class Employee extends Model
     /** @use HasFactory<EmployeeFactory> */
     use HasFactory;
 
+    use LogsActivity;
     use SoftDeletes;
+
+    /**
+     * This is what replaces the approval gate the design deliberately left out:
+     * an employee edits their own record with nobody signing off, and the log
+     * is what makes that safe.
+     */
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()
+            ->logFillable()
+            // Without this every save records all fourteen columns and the log
+            // becomes unreadable inside a month.
+            ->logOnlyDirty()
+            ->dontLogEmptyChanges();
+    }
 
     /** @return array<string, string> */
     protected function casts(): array
