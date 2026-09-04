@@ -18,6 +18,7 @@ class LeaveTypeFactory extends Factory
             'ledger' => null,
             'accrual_days_per_month' => null,
             'grant_days_per_year' => null,
+            'grant_carries_over' => false,
             'notice_days' => null,
             'max_consecutive_days' => null,
             'applies_to' => ['permanent', 'coterminous'],

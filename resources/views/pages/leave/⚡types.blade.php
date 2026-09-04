@@ -25,6 +25,8 @@ new #[Title('Leave types')] class extends Component {
 
     public ?int $grantDaysPerYear = null;
 
+    public bool $grantCarriesOver = false;
+
     public ?int $noticeDays = null;
 
     public ?int $maxConsecutiveDays = null;
@@ -65,6 +67,7 @@ new #[Title('Leave types')] class extends Component {
         $this->ledger = $type->ledger;
         $this->accrualDaysPerMonth = $type->accrual_days_per_month;
         $this->grantDaysPerYear = $type->grant_days_per_year;
+        $this->grantCarriesOver = $type->grant_carries_over;
         $this->noticeDays = $type->notice_days;
         $this->maxConsecutiveDays = $type->max_consecutive_days;
         $this->appliesTo = $type->applies_to;
@@ -88,6 +91,7 @@ new #[Title('Leave types')] class extends Component {
             'ledger' => ['nullable', Rule::in(['vacation', 'sick', 'spl', 'solo_parent', 'wellness'])],
             'accrualDaysPerMonth' => ['nullable', 'numeric', 'min:0', 'max:31'],
             'grantDaysPerYear' => ['nullable', 'integer', 'min:0', 'max:365'],
+            'grantCarriesOver' => ['boolean'],
             'noticeDays' => ['nullable', 'integer', 'min:0', 'max:365'],
             'maxConsecutiveDays' => ['nullable', 'integer', 'min:1', 'max:365'],
             // A type nobody may file is a row that looks like a policy and
@@ -103,6 +107,7 @@ new #[Title('Leave types')] class extends Component {
             'ledger' => $validated['ledger'] ?: null,
             'accrual_days_per_month' => $validated['accrualDaysPerMonth'] ?: null,
             'grant_days_per_year' => $validated['grantDaysPerYear'],
+            'grant_carries_over' => $validated['grantCarriesOver'],
             'notice_days' => $validated['noticeDays'],
             'max_consecutive_days' => $validated['maxConsecutiveDays'],
             'applies_to' => $validated['appliesTo'],
@@ -140,7 +145,7 @@ new #[Title('Leave types')] class extends Component {
     {
         $this->reset([
             'editingId', 'code', 'name', 'legalBasis', 'ledger',
-            'accrualDaysPerMonth', 'grantDaysPerYear', 'noticeDays',
+            'accrualDaysPerMonth', 'grantDaysPerYear', 'grantCarriesOver', 'noticeDays',
             'maxConsecutiveDays', 'appliesTo',
         ]);
         $this->resetValidation();
@@ -197,7 +202,10 @@ new #[Title('Leave types')] class extends Component {
                             {{ __(':days days notice', ['days' => $type->notice_days]) }}<br>
                         @endif
                         @if ($type->max_consecutive_days)
-                            {{ __('max :days consecutive', ['days' => $type->max_consecutive_days]) }}
+                            {{ __('max :days consecutive', ['days' => $type->max_consecutive_days]) }}<br>
+                        @endif
+                        @if ($type->grant_days_per_year && ! $type->grant_carries_over)
+                            {{ __('forfeited yearly') }}
                         @endif
                     </flux:table.cell>
                     <flux:table.cell class="text-sm">
@@ -266,6 +274,12 @@ new #[Title('Leave types')] class extends Component {
                 <flux:input wire:model="noticeDays" type="number" :label="__('Days of notice required')" />
                 <flux:input wire:model="maxConsecutiveDays" type="number" :label="__('Maximum consecutive days')" />
             </div>
+
+            <flux:switch
+                wire:model="grantCarriesOver"
+                :label="__('An unused grant carries into the next year')"
+                :description="__('Off for Special Privilege and Solo Parent leave: three days a year, forfeited if unused.')"
+            />
 
             <flux:checkbox.group wire:model="appliesTo" :label="__('Who may file it')">
                 @foreach (App\Enums\EmploymentStatus::cases() as $status)

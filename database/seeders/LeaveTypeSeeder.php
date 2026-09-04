@@ -46,6 +46,9 @@ class LeaveTypeSeeder extends Seeder
                 'ledger' => $ledger,
                 'accrual_days_per_month' => $accrual,
                 'grant_days_per_year' => $grant,
+                // SPL and Solo Parent are a fixed number of days a year,
+                // forfeited if unused. Nothing carries into the next year.
+                'grant_carries_over' => false,
                 'applies_to' => self::REGULAR,
                 'sort_order' => $order + 1,
             ]);
@@ -56,6 +59,10 @@ class LeaveTypeSeeder extends Seeder
             'legal_basis' => 'DTRC policy',
             'ledger' => 'wellness',
             'grant_days_per_year' => 5,
+            // The hospital's own leave, so the hospital decides. Set to
+            // forfeit like the CSC grants until HR says otherwise; the Leave
+            // types screen changes it without a deployment.
+            'grant_carries_over' => false,
             'notice_days' => 5,
             'max_consecutive_days' => 3,
             'applies_to' => self::CASUAL,

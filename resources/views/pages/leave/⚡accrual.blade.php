@@ -1,10 +1,14 @@
 <?php
 
 use App\Services\Leave\AccrualPosting;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Livewire\Attributes\Title;
 use Livewire\Component;
+use Livewire\WithPagination;
 
 new #[Title('Post leave credits')] class extends Component {
+    use WithPagination;
+
     public string $period = '';
 
     public string $year = '';
@@ -16,6 +20,12 @@ new #[Title('Post leave credits')] class extends Component {
         // Last month, because that is the one being closed.
         $this->period = now()->subMonth()->format('Y-m');
         $this->year = now()->format('Y');
+    }
+
+    public function updatedPeriod(): void
+    {
+        // Page 4 of last month's list is not page 4 of this one.
+        $this->resetPage();
     }
 
     public function post(): void
@@ -60,6 +70,46 @@ new #[Title('Post leave credits')] class extends Component {
         );
     }
 
+    public function undo(): void
+    {
+        $this->authorize('leave.manage');
+
+        $this->validate([
+            'period' => ['required', 'regex:/^\d{4}-(0[1-9]|1[0-2])$/'],
+        ], [
+            'period.regex' => __('A period is a year and a month, like 2026-09.'),
+        ]);
+
+        $removed = app(AccrualPosting::class)->undo($this->period);
+
+        Flux::toast(
+            variant: $removed > 0 ? 'success' : 'warning',
+            text: $removed > 0
+                ? __(':count entries removed.', ['count' => $removed])
+                : __('Nothing to remove. This month was not posted.'),
+        );
+    }
+
+    public function undoGrants(): void
+    {
+        $this->authorize('leave.manage');
+
+        $this->validate([
+            'year' => ['required', 'regex:/^\d{4}$/'],
+        ], [
+            'year.regex' => __('A year is four digits, like 2026.'),
+        ]);
+
+        $removed = app(AccrualPosting::class)->undoGrants($this->year);
+
+        Flux::toast(
+            variant: $removed > 0 ? 'success' : 'warning',
+            text: $removed > 0
+                ? __(':count entries removed.', ['count' => $removed])
+                : __('Nothing to remove. This year was not granted.'),
+        );
+    }
+
     /** @return array<string, mixed> */
     public function with(): array
     {
@@ -68,16 +118,43 @@ new #[Title('Post leave credits')] class extends Component {
         // The shape is checked here rather than left to the service, because
         // with() runs on every keystroke of a live field. A service that threw
         // on "2026-0" would take the screen down mid-typing.
+        $rows = preg_match('/^\d{4}-(0[1-9]|1[0-2])$/', $this->period) === 1
+            ? $posting->preview($this->period)
+            : [];
+
+        $grantRows = preg_match('/^\d{4}$/', $this->year) === 1
+            ? $posting->previewGrants($this->year)
+            : [];
+
+        // The previews write nothing. They are what a person reads before
+        // pressing a button that changes 194 balances. The counts are of every
+        // row, not of the page, because "how many are left" is the question.
         return [
-            // The previews write nothing. They are what a person reads before
-            // pressing a button that changes 194 balances.
-            'rows' => preg_match('/^\d{4}-(0[1-9]|1[0-2])$/', $this->period) === 1
-                ? $posting->preview($this->period)
-                : [],
-            'grantRows' => preg_match('/^\d{4}$/', $this->year) === 1
-                ? $posting->previewGrants($this->year)
-                : [],
+            'dueCount' => collect($rows)->where('already_posted', false)->count(),
+            'postedCount' => collect($rows)->where('already_posted', true)->count(),
+            'grantsDueCount' => collect($grantRows)->where('already_posted', false)->count(),
+            'grantsPostedCount' => collect($grantRows)->where('already_posted', true)->count(),
+            'rows' => $this->paginateRows($rows),
         ];
+    }
+
+    /**
+     * The preview is an array, not a query, so the paginator is built by hand.
+     * 194 rows on one page is a scroll nobody reads to the end of.
+     *
+     * @param  list<array<string, mixed>>  $rows
+     */
+    private function paginateRows(array $rows, int $perPage = 25): LengthAwarePaginator
+    {
+        $page = $this->getPage();
+
+        return new LengthAwarePaginator(
+            array_slice($rows, ($page - 1) * $perPage, $perPage),
+            count($rows),
+            $perPage,
+            $page,
+            ['path' => request()->url()],
+        );
     }
 }; ?>
 
@@ -107,18 +184,28 @@ new #[Title('Post leave credits')] class extends Component {
                 {{ __('Pressing this twice is safe. A month already recorded is not recorded again.') }}
             </flux:callout>
 
-            @php
-                $due = collect($rows)->where('already_posted', false)->count();
-            @endphp
-
             <flux:text class="text-sm">
                 {{ __(':due to post, :done already recorded.', [
-                    'due' => $due,
-                    'done' => count($rows) - $due,
+                    'due' => $dueCount,
+                    'done' => $postedCount,
                 ]) }}
             </flux:text>
 
-            <flux:button wire:click="post" variant="primary">{{ __('Post the credits') }}</flux:button>
+            <div class="flex flex-wrap items-center gap-3">
+                <flux:button wire:click="post" variant="primary">{{ __('Post the credits') }}</flux:button>
+
+                {{-- The wrong month typed is the mistake this takes back. It
+                     refuses if anybody has already spent the credits. --}}
+                <flux:button
+                    wire:click="undo"
+                    wire:confirm="{{ __('Remove every credit posted for this month?') }}"
+                    variant="subtle"
+                >
+                    {{ __('Undo this month') }}
+                </flux:button>
+            </div>
+
+            <flux:error name="period" />
         </flux:card>
 
         {{--
@@ -145,24 +232,32 @@ new #[Title('Post leave credits')] class extends Component {
                 {{ __('Wellness Leave is the only credit job order and contract of service staff receive.') }}
             </flux:callout>
 
-            @php
-                $grantsDue = collect($grantRows)->where('already_posted', false)->count();
-            @endphp
-
             <flux:text class="text-sm">
                 {{ __(':due to post, :done already granted.', [
-                    'due' => $grantsDue,
-                    'done' => count($grantRows) - $grantsDue,
+                    'due' => $grantsDueCount,
+                    'done' => $grantsPostedCount,
                 ]) }}
             </flux:text>
 
-            <flux:button wire:click="postGrants" variant="primary">{{ __('Post the grants') }}</flux:button>
+            <div class="flex flex-wrap items-center gap-3">
+                <flux:button wire:click="postGrants" variant="primary">{{ __('Post the grants') }}</flux:button>
+
+                <flux:button
+                    wire:click="undoGrants"
+                    wire:confirm="{{ __('Remove this year\'s grants, and restore what was forfeited before them?') }}"
+                    variant="subtle"
+                >
+                    {{ __('Undo this year') }}
+                </flux:button>
+            </div>
+
+            <flux:error name="year" />
         </flux:card>
     </div>
 
     <flux:heading size="lg" class="mt-10">{{ __('What the month will write') }}</flux:heading>
 
-    <flux:table class="mt-4">
+    <flux:table class="mt-4" :paginate="$rows">
         <flux:table.columns>
             <flux:table.column>{{ __('Employee') }}</flux:table.column>
             <flux:table.column>{{ __('Balance') }}</flux:table.column>

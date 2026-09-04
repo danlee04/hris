@@ -15,6 +15,7 @@ enum LeaveLedgerKind: string
     case Opening = 'opening';
     case Accrual = 'accrual';
     case Grant = 'grant';
+    case Expiry = 'expiry';
     case Hold = 'hold';
     case Release = 'release';
     case Commit = 'commit';
@@ -26,6 +27,7 @@ enum LeaveLedgerKind: string
             self::Opening => 'Opening balance',
             self::Accrual => 'Monthly accrual',
             self::Grant => 'Yearly grant',
+            self::Expiry => 'Forfeited at year end',
             self::Hold => 'Held for an application',
             self::Release => 'Released',
             self::Commit => 'Used',

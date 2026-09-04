@@ -68,7 +68,8 @@ class AccrualScreenTest extends TestCase
         Livewire::actingAs($this->userWithRole('hr'))
             ->test('pages::leave.accrual')
             ->set('period', '2026-09')
-            ->assertViewHas('rows', fn ($rows) => count($rows) === 2);
+            ->assertViewHas('rows', fn ($rows) => $rows->total() === 2)
+            ->assertViewHas('dueCount', 2);
 
         $this->assertSame(0, LeaveLedgerEntry::count());
     }
@@ -90,7 +91,7 @@ class AccrualScreenTest extends TestCase
         Livewire::actingAs($this->userWithRole('hr'))
             ->test('pages::leave.accrual')
             ->set('period', '2026-0')
-            ->assertViewHas('rows', []);
+            ->assertViewHas('rows', fn ($rows) => $rows->total() === 0);
     }
 
     public function test_an_employee_cannot_reach_the_posting_screen(): void
@@ -139,5 +140,104 @@ class AccrualScreenTest extends TestCase
             ->set('year', '26')
             ->call('postGrants')
             ->assertHasErrors('year');
+    }
+
+    public function test_the_preview_table_paginates(): void
+    {
+        // 194 rows on one page is a scroll nobody reads to the end of. The
+        // counts above it still speak for every row, not for the page.
+        Employee::factory()->count(20)->create([
+            'employment_status' => EmploymentStatus::Permanent->value,
+        ]);
+
+        Livewire::actingAs($this->userWithRole('hr'))
+            ->test('pages::leave.accrual')
+            ->set('period', '2026-09')
+            ->assertViewHas('rows', fn ($rows) => $rows->count() === 25 && $rows->total() === 40)
+            ->assertViewHas('dueCount', 40);
+    }
+
+    public function test_changing_the_month_returns_to_the_first_page(): void
+    {
+        // Page 4 of last month's list is not page 4 of this one.
+        Employee::factory()->count(20)->create([
+            'employment_status' => EmploymentStatus::Permanent->value,
+        ]);
+
+        Livewire::actingAs($this->userWithRole('hr'))
+            ->test('pages::leave.accrual')
+            ->set('period', '2026-09')
+            ->call('setPage', 2)
+            ->set('period', '2026-10')
+            ->assertViewHas('rows', fn ($rows) => $rows->currentPage() === 1);
+    }
+
+    public function test_hr_undoes_a_month(): void
+    {
+        Employee::factory()->create(['employment_status' => EmploymentStatus::Permanent->value]);
+
+        $component = Livewire::actingAs($this->userWithRole('hr'))
+            ->test('pages::leave.accrual')
+            ->set('period', '2026-09');
+
+        $component->call('post');
+        $component->call('undo');
+
+        $this->assertSame(0, LeaveLedgerEntry::count());
+    }
+
+    public function test_undoing_says_so_when_the_credits_have_been_spent(): void
+    {
+        $employee = Employee::factory()->create([
+            'employment_status' => EmploymentStatus::Permanent->value,
+        ]);
+
+        $component = Livewire::actingAs($this->userWithRole('hr'))
+            ->test('pages::leave.accrual')
+            ->set('period', '2026-09');
+
+        $component->call('post');
+
+        app(LeaveLedger::class)->adjust($employee, 'vacation', -1, 'Took a day');
+
+        $component->call('undo')->assertHasErrors('period');
+
+        // Nothing was half-removed: the sick entry is still there too.
+        $this->assertSame(1.25, app(LeaveLedger::class)->balance($employee, 'sick'));
+    }
+
+    public function test_an_undo_re_asks_instead_of_trusting_mount(): void
+    {
+        Employee::factory()->create(['employment_status' => EmploymentStatus::Permanent->value]);
+
+        $hr = $this->userWithRole('hr');
+
+        $component = Livewire::actingAs($hr)
+            ->test('pages::leave.accrual')
+            ->set('period', '2026-09');
+
+        $component->call('post');
+
+        $hr->removeRole('hr');
+
+        $component->call('undo')->assertForbidden();
+
+        $this->assertSame(2, LeaveLedgerEntry::count());
+    }
+
+    public function test_hr_undoes_a_year_of_grants(): void
+    {
+        $jobOrder = Employee::factory()->create([
+            'employment_status' => EmploymentStatus::JobOrder->value,
+        ]);
+
+        $component = Livewire::actingAs($this->userWithRole('hr'))
+            ->test('pages::leave.accrual')
+            ->set('year', '2026');
+
+        $component->call('postGrants');
+        $component->call('undoGrants');
+
+        $this->assertSame(0.0, app(LeaveLedger::class)->balance($jobOrder, 'wellness'));
     }
 }

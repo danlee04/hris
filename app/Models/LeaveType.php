@@ -11,7 +11,7 @@ use Illuminate\Database\Eloquent\Model;
 
 #[Fillable([
     'code', 'name', 'legal_basis', 'ledger', 'accrual_days_per_month',
-    'grant_days_per_year', 'notice_days', 'max_consecutive_days',
+    'grant_days_per_year', 'grant_carries_over', 'notice_days', 'max_consecutive_days',
     'applies_to', 'sort_order', 'is_active',
 ])]
 class LeaveType extends Model
@@ -27,6 +27,7 @@ class LeaveType extends Model
             'grant_days_per_year' => 'integer',
             'notice_days' => 'integer',
             'max_consecutive_days' => 'integer',
+            'grant_carries_over' => 'boolean',
             'is_active' => 'boolean',
         ];
     }

@@ -3,12 +3,15 @@
 namespace Tests\Feature\Leave;
 
 use App\Enums\EmploymentStatus;
+use App\Enums\LeaveLedgerKind;
 use App\Models\Employee;
 use App\Models\LeaveLedgerEntry;
+use App\Models\LeaveType;
 use App\Services\Leave\AccrualPosting;
 use App\Services\Leave\LeaveLedger;
 use Database\Seeders\LeaveTypeSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Validation\ValidationException;
 use InvalidArgumentException;
 use Tests\TestCase;
 
@@ -154,5 +157,149 @@ class AccrualPostingTest extends TestCase
         $this->expectException(InvalidArgumentException::class);
 
         app(AccrualPosting::class)->postGrants('26');
+    }
+
+    public function test_a_grant_that_does_not_carry_over_forfeits_last_years_leftovers(): void
+    {
+        // Special Privilege Leave is three days a year, forfeited if unused.
+        // Granting on top of last year's leftovers would hand out six.
+        $employee = $this->permanent();
+
+        app(AccrualPosting::class)->postGrants('2026');
+        app(AccrualPosting::class)->postGrants('2027');
+
+        $this->assertSame(3.0, app(LeaveLedger::class)->balance($employee, 'spl'));
+    }
+
+    public function test_the_forfeit_is_an_entry_of_its_own(): void
+    {
+        // "Where did my three days go" is a question somebody asks in
+        // February. A silent reset has nothing to answer with.
+        $employee = $this->permanent();
+
+        app(AccrualPosting::class)->postGrants('2026');
+        app(AccrualPosting::class)->postGrants('2027');
+
+        $forfeit = LeaveLedgerEntry::where('employee_id', $employee->id)
+            ->where('kind', LeaveLedgerKind::Expiry)
+            ->where('ledger', 'spl')
+            ->sole();
+
+        $this->assertSame(-3.0, $forfeit->days);
+        $this->assertSame('2027', $forfeit->period);
+    }
+
+    public function test_a_grant_that_carries_over_keeps_last_years_leftovers(): void
+    {
+        $employee = $this->permanent();
+
+        LeaveType::where('code', 'SPL')->update(['grant_carries_over' => true]);
+
+        app(AccrualPosting::class)->postGrants('2026');
+        app(AccrualPosting::class)->postGrants('2027');
+
+        $this->assertSame(6.0, app(LeaveLedger::class)->balance($employee, 'spl'));
+    }
+
+    public function test_a_partly_used_grant_forfeits_only_what_is_left(): void
+    {
+        $employee = $this->permanent();
+
+        app(AccrualPosting::class)->postGrants('2026');
+        app(LeaveLedger::class)->adjust($employee, 'spl', -2, 'Took two days');
+
+        app(AccrualPosting::class)->postGrants('2027');
+
+        $this->assertSame(3.0, app(LeaveLedger::class)->balance($employee, 'spl'));
+    }
+
+    public function test_undoing_a_month_removes_what_it_wrote(): void
+    {
+        // The wrong month typed. Deleting rather than reversing, because an
+        // accrual for a month nobody meant to post is a mistake in the
+        // recording, not something that happened.
+        $employee = $this->permanent();
+
+        app(AccrualPosting::class)->post('2026-09');
+        $removed = app(AccrualPosting::class)->undo('2026-09');
+
+        $this->assertSame(2, $removed);
+        $this->assertSame(0.0, app(LeaveLedger::class)->balance($employee, 'vacation'));
+        $this->assertSame(0, LeaveLedgerEntry::count());
+    }
+
+    public function test_undoing_leaves_every_other_month_alone(): void
+    {
+        $employee = $this->permanent();
+
+        app(AccrualPosting::class)->post('2026-09');
+        app(AccrualPosting::class)->post('2026-10');
+        app(AccrualPosting::class)->undo('2026-09');
+
+        $this->assertSame(1.25, app(LeaveLedger::class)->balance($employee, 'vacation'));
+    }
+
+    public function test_undoing_leaves_the_opening_balance_alone(): void
+    {
+        // The opening balance has no period, so it is not part of any posting.
+        $employee = $this->permanent();
+
+        app(LeaveLedger::class)->open($employee, 'vacation', 10);
+        app(AccrualPosting::class)->post('2026-09');
+        app(AccrualPosting::class)->undo('2026-09');
+
+        $this->assertSame(10.0, app(LeaveLedger::class)->balance($employee, 'vacation'));
+    }
+
+    public function test_a_month_can_be_posted_again_after_it_is_undone(): void
+    {
+        $employee = $this->permanent();
+
+        app(AccrualPosting::class)->post('2026-09');
+        app(AccrualPosting::class)->undo('2026-09');
+
+        $this->assertSame(2, app(AccrualPosting::class)->post('2026-09'));
+        $this->assertSame(1.25, app(LeaveLedger::class)->balance($employee, 'vacation'));
+    }
+
+    public function test_undoing_refuses_when_the_credits_have_been_spent(): void
+    {
+        // Nothing spends credits until Phase 2a-2, but by then this is the
+        // difference between an undo and somebody owing days they have taken.
+        $employee = $this->permanent();
+
+        app(AccrualPosting::class)->post('2026-09');
+        app(LeaveLedger::class)->adjust($employee, 'vacation', -1, 'Took a day');
+
+        try {
+            app(AccrualPosting::class)->undo('2026-09');
+            $this->fail('The undo should have been refused.');
+        } catch (ValidationException $e) {
+            $this->assertStringContainsString('already been used', $e->validator->errors()->first());
+        }
+
+        // The whole undo is rolled back, not half of it.
+        $this->assertSame(0.25, app(LeaveLedger::class)->balance($employee, 'vacation'));
+        $this->assertSame(1.25, app(LeaveLedger::class)->balance($employee, 'sick'));
+    }
+
+    public function test_undoing_a_year_takes_back_the_forfeit_too(): void
+    {
+        // Undoing the grant without the forfeit would leave the balance
+        // cleared and nothing to show for it.
+        $employee = $this->permanent();
+
+        app(AccrualPosting::class)->postGrants('2026');
+        app(AccrualPosting::class)->postGrants('2027');
+        app(AccrualPosting::class)->undoGrants('2027');
+
+        $this->assertSame(3.0, app(LeaveLedger::class)->balance($employee, 'spl'));
+    }
+
+    public function test_undoing_a_month_that_was_never_posted_removes_nothing(): void
+    {
+        $this->permanent();
+
+        $this->assertSame(0, app(AccrualPosting::class)->undo('2026-09'));
     }
 }
