@@ -271,13 +271,13 @@ new class extends Component {
     @endif
 
     <form wire:submit="save" @class(['space-y-8', 'mt-6 max-w-3xl' => ! $inModal])>
+        {{-- Every field here carries its hint in the placeholder rather than a
+             description. A description under one field in a two-column grid
+             makes that row taller than its neighbour, and the form goes
+             ragged. --}}
         <div class="grid gap-6 sm:grid-cols-2">
-            <flux:input wire:model="form.employee_number" :label="__('Employee number')" />
-            <flux:input
-                wire:model="form.biometric_id"
-                :label="__('Biometric ID')"
-                :description="__('Optional. Matches the device export.')"
-            />
+            <flux:input wire:model="form.employee_number" :label="__('Employee number')" placeholder="2008-0142" />
+            <flux:input wire:model="form.biometric_id" :label="__('Biometric ID')" placeholder="77" />
 
             <flux:input wire:model="form.first_name" :label="__('First name')" />
             <flux:input wire:model="form.middle_name" :label="__('Middle name')" />
@@ -291,7 +291,6 @@ new class extends Component {
                 wire:model="form.credentials"
                 class="sm:col-span-2"
                 :label="__('Credentials')"
-                :description="__('Printed after the name on signed forms. Whatever the person puts on their own letterhead.')"
                 placeholder="MD, DPCAM, MM-PA"
             />
         </div>
@@ -380,7 +379,7 @@ new class extends Component {
                 <flux:switch
                     wire:model="form.is_hr_officer"
                     :label="__('Human Resource Development Officer')"
-                    :description="__('One person at a time. Their name signs item 7.A of CS Form 6, whoever in HR does the work.')"
+                    :description="__('One person at a time. Their name signs item 7.A of CS Form 6.')"
                 />
 
                 <flux:error name="form.is_hr_officer" />
