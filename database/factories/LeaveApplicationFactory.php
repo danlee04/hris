@@ -23,6 +23,7 @@ class LeaveApplicationFactory extends Factory
             'days_with_pay' => 2,
             'days_without_pay' => 0,
             'details' => null,
+            'purpose' => null,
             'commutation' => 'not_requested',
             'status' => LeaveStatus::Pending,
             'filed_at' => now(),

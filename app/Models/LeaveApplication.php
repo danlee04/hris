@@ -13,7 +13,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 #[Fillable([
     'employee_id', 'leave_type_id', 'date_from', 'date_to', 'days',
-    'days_with_pay', 'days_without_pay', 'details', 'commutation',
+    'days_with_pay', 'days_without_pay', 'details', 'purpose', 'commutation',
     'status', 'filed_at', 'decided_at',
 ])]
 class LeaveApplication extends Model

@@ -111,6 +111,19 @@ revisiting this section, not copying an answer into it.
 `pages::<dir>.<name>`, and are routed with `Route::livewire()`. Class-based
 components in `app/Livewire` are for shared concerns, not pages.
 
+**`view` is not available as an action name on an SFC page.** The Livewire 4
+compiler appends its own `protected function view($data = [])` to every
+generated page class, which silently overrides one of yours — a `wire:click` at
+it fails with "Public method [view] not found on component". Name it `open()`.
+The same goes for `render`, and for `mount`, `boot`, `hydrate*`, `updated*` and
+the rest of the lifecycle hooks, which Livewire refuses to call from the
+browser.
+
+**In a namespaced class, `Flux::` is not the Flux facade.** Page components sit
+in the root namespace so a bare `Flux::modal()` resolves; inside
+`App\Livewire\Concerns` it looks for `App\Livewire\Concerns\Flux`. Write
+`\Flux\Flux::modal()`.
+
 **Repeating rows bind `wire:key` to a stable row key, never the array index.**
 With an index key, deleting a row in the middle makes the rows below it render
 each other's content — the page still looks plausible, which is what makes it

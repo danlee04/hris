@@ -11,9 +11,11 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Title;
 use Livewire\Component;
+use App\Livewire\Concerns\ViewsLeaveApplications;
 use Livewire\WithPagination;
 
 new #[Title('Approvals')] class extends Component {
+    use ViewsLeaveApplications;
     use WithPagination;
 
     public string $remarks = '';
@@ -161,6 +163,9 @@ new #[Title('Approvals')] class extends Component {
                     <flux:table.cell>{{ $application->currentApproval()?->step->action() }}</flux:table.cell>
                     <flux:table.cell>
                         <div class="flex gap-3 text-sm">
+                            <flux:link href="#" wire:click.prevent="open({{ $application->id }})">
+                                {{ __('View') }}
+                            </flux:link>
                             <flux:link href="#" wire:click.prevent="approve({{ $application->id }})">
                                 {{ __('Approve') }}
                             </flux:link>
@@ -182,4 +187,27 @@ new #[Title('Approvals')] class extends Component {
             @endforelse
         </flux:table.rows>
     </flux:table>
+
+    <flux:modal name="leave-detail" class="w-full md:max-w-2xl">
+        @if ($detail = $this->viewing())
+            <x-leave.application-detail :application="$detail" />
+
+            <div class="mt-6 flex justify-end gap-3">
+                @can('export', $detail)
+                    <flux:button
+                        wire:click="download({{ $detail->id }})"
+                        variant="primary"
+                        icon="arrow-down-tray"
+                        size="sm"
+                    >
+                        {{ __('CS Form 6') }}
+                    </flux:button>
+                @endcan
+
+                <flux:modal.close>
+                    <flux:button type="button" variant="ghost" size="sm">{{ __('Close') }}</flux:button>
+                </flux:modal.close>
+            </div>
+        @endif
+    </flux:modal>
 </section>

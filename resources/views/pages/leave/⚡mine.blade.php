@@ -9,9 +9,11 @@ use App\Services\Leave\LeaveFiler;
 use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Title;
 use Livewire\Component;
+use App\Livewire\Concerns\ViewsLeaveApplications;
 use Livewire\WithPagination;
 
 new #[Title('My leave')] class extends Component {
+    use ViewsLeaveApplications;
     use WithPagination;
 
     /** @var array<string, mixed> */
@@ -54,6 +56,7 @@ new #[Title('My leave')] class extends Component {
             'date_from' => $application->date_from->toDateString(),
             'date_to' => $application->date_to->toDateString(),
             'days' => $application->days,
+            'purpose' => $application->purpose,
             'commutation' => $application->commutation,
             'details' => $application->details ?? [],
         ];
@@ -143,6 +146,7 @@ new #[Title('My leave')] class extends Component {
             'date_from' => null,
             'date_to' => null,
             'days' => null,
+            'purpose' => null,
             'commutation' => 'not_requested',
             'details' => [],
         ];
@@ -226,6 +230,10 @@ new #[Title('My leave')] class extends Component {
                     </flux:table.cell>
                     <flux:table.cell>
                         <div class="flex gap-3 text-sm">
+                            <flux:link href="#" wire:click.prevent="open({{ $application->id }})">
+                                {{ __('View') }}
+                            </flux:link>
+
                             @can('cancel', $application)
                                 <flux:link href="#" wire:click.prevent="cancel({{ $application->id }})">
                                     {{ __('Cancel') }}
@@ -316,6 +324,16 @@ new #[Title('My leave')] class extends Component {
                 <flux:input wire:model="form.details.women_detail" :label="__('Illness')" />
             @endif
 
+            {{-- No box for this on CS Form 6. It is for the people deciding:
+                 a section head reading a queue of dates cannot recommend
+                 anything without knowing what the days are for. --}}
+            <flux:textarea
+                wire:model="form.purpose"
+                :label="__('Purpose')"
+                :description="__('What the days are for. The approvers see this; it does not print on the form.')"
+                rows="2"
+            />
+
             <flux:select wire:model="form.commutation" :label="__('Commutation')">
                 <flux:select.option value="not_requested">{{ __('Not requested') }}</flux:select.option>
                 <flux:select.option value="requested">{{ __('Requested') }}</flux:select.option>
@@ -334,5 +352,27 @@ new #[Title('My leave')] class extends Component {
                 <flux:button type="submit" variant="primary">{{ __('File it') }}</flux:button>
             </div>
         </form>
+    </flux:modal>
+    <flux:modal name="leave-detail" class="w-full md:max-w-2xl">
+        @if ($detail = $this->viewing())
+            <x-leave.application-detail :application="$detail" />
+
+            <div class="mt-6 flex justify-end gap-3">
+                @can('export', $detail)
+                    <flux:button
+                        wire:click="download({{ $detail->id }})"
+                        variant="primary"
+                        icon="arrow-down-tray"
+                        size="sm"
+                    >
+                        {{ __('CS Form 6') }}
+                    </flux:button>
+                @endcan
+
+                <flux:modal.close>
+                    <flux:button type="button" variant="ghost" size="sm">{{ __('Close') }}</flux:button>
+                </flux:modal.close>
+            </div>
+        @endif
     </flux:modal>
 </section>

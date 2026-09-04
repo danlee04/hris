@@ -173,6 +173,31 @@ class LeaveFilerTest extends TestCase
         ]));
     }
 
+    public function test_the_purpose_is_kept(): void
+    {
+        // CS Form 6 has no box for it. It is for the people deciding: a section
+        // head reading a queue of dates cannot recommend anything without
+        // knowing what the days are for.
+        app(LeaveLedger::class)->open($this->applicant, 'vacation', 10);
+
+        $application = app(LeaveFiler::class)->file($this->applicant, $this->attributes([
+            'purpose' => 'Attending my sister\'s wedding in Cebu',
+        ]));
+
+        $this->assertSame("Attending my sister's wedding in Cebu", $application->purpose);
+    }
+
+    public function test_a_blank_purpose_is_stored_as_null(): void
+    {
+        app(LeaveLedger::class)->open($this->applicant, 'vacation', 10);
+
+        $application = app(LeaveFiler::class)->file($this->applicant, $this->attributes([
+            'purpose' => '   ',
+        ]));
+
+        $this->assertNull($application->purpose);
+    }
+
     public function test_a_leave_type_that_does_not_exist_is_refused_as_validation(): void
     {
         // findOrFail here surfaced as a 404 page. A leave type id arrives from

@@ -85,6 +85,7 @@ class LeaveFiler
                 'days_with_pay' => $split['paid'],
                 'days_without_pay' => $split['unpaid'],
                 'details' => $this->details($attributes['details'] ?? null),
+                'purpose' => trim((string) ($attributes['purpose'] ?? '')) ?: null,
                 'commutation' => $attributes['commutation'] ?? 'not_requested',
                 'status' => LeaveStatus::Pending,
                 'filed_at' => now(),

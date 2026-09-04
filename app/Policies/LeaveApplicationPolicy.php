@@ -69,6 +69,15 @@ class LeaveApplicationPolicy
             && $application->isUntouched();
     }
 
+    /**
+     * Whoever may see it may print it. The form is what gets walked from desk
+     * to desk, and refusing to produce it would send the office back to typing.
+     */
+    public function export(User $user, LeaveApplication $application): bool
+    {
+        return $this->view($user, $application);
+    }
+
     /** The applicant, and only on one that was sent back to them. */
     public function refile(User $user, LeaveApplication $application): bool
     {
