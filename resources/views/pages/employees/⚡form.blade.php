@@ -6,25 +6,31 @@ use App\Models\Employee;
 use App\Models\Position;
 use App\Models\Section;
 use Illuminate\Validation\Rule;
-use Livewire\Attributes\Title;
+use Livewire\Attributes\On;
 use Livewire\Component;
 
 /**
- * One component behind two routes: employees/create and employees/{employee}/edit.
+ * The employee master form, used two ways.
  *
- * They are the same fourteen fields with the same rules. Two components would
- * mean adding a column to one form and forgetting the other, which nothing
- * would show until somebody noticed a blank on a record they created rather
- * than corrected.
+ * As a page at employees/create, and nested inside the modal on the employee
+ * list and the employee page, where it serves both Add and Edit. One instance
+ * handles every row: the row dispatches an id, this component loads it and
+ * opens the modal. Nesting one component per row would mount 25 of them to use
+ * one.
+ *
+ * Adding and correcting are the same fourteen fields with the same rules. Two
+ * components would mean adding a column to one and forgetting the other, which
+ * nothing would show until somebody noticed a blank on a record they created
+ * rather than corrected.
  */
 new class extends Component {
     /** Null while adding, the id of the record being corrected otherwise. */
     public ?int $employeeId = null;
 
     /**
-     * Set when this is rendered inside the Add modal on the employee list. It
-     * drops the page heading and the Back link, and nothing else — the fields
-     * and the rules are the same ones, because they are the same component.
+     * Set when this is rendered inside the modal. It drops the page heading
+     * and the Back link, and nothing else — the fields and the rules are the
+     * same ones, because they are the same component.
      */
     public bool $inModal = false;
 
@@ -39,7 +45,42 @@ new class extends Component {
             $this->authorize('create', Employee::class);
         }
 
-        $this->employeeId = $employee?->exists ? $employee->id : null;
+        $this->loadFrom($employee?->exists ? $employee : null);
+    }
+
+    /** The Add button on the list. */
+    #[On('add-employee')]
+    public function startAdding(): void
+    {
+        $this->authorize('create', Employee::class);
+
+        // The same modal served an Edit a moment ago. Without this, Add carries
+        // that employee's id and quietly overwrites them.
+        $this->loadFrom(null);
+        $this->resetValidation();
+
+        Flux::modal('employee-form')->show();
+    }
+
+    /** An Edit link on a row. */
+    #[On('edit-employee')]
+    public function startEditing(int $id): void
+    {
+        // The id arrives from the browser, so it is asked about here rather
+        // than trusted.
+        $employee = Employee::findOrFail($id);
+
+        $this->authorize('update', $employee);
+
+        $this->loadFrom($employee);
+        $this->resetValidation();
+
+        Flux::modal('employee-form')->show();
+    }
+
+    private function loadFrom(?Employee $employee): void
+    {
+        $this->employeeId = $employee?->id;
 
         $this->form = [
             'employee_number' => $employee?->employee_number,
@@ -142,6 +183,11 @@ new class extends Component {
         if ($employee) {
             $employee->update($validated);
 
+            $this->closeModal();
+
+            // The list is showing the old name until it is told otherwise.
+            $this->dispatch('employee-saved');
+
             Flux::toast(variant: 'success', text: __('Employee saved.'));
 
             return null;
@@ -149,12 +195,23 @@ new class extends Component {
 
         $employee = Employee::create($validated);
 
-        // Straight to the record just created. Leaving the browser on
-        // employees/create makes the next Save look like a second person, and
-        // the unique employee number is the only thing that would say otherwise.
+        $this->closeModal();
+
+        // Straight to the record just created. Leaving the form open makes the
+        // next Save look like a second person, and the unique employee number
+        // is the only thing that would say otherwise.
         session()->flash('status', __('Employee added.'));
 
-        return $this->redirect(route('employees.edit', $employee), navigate: true);
+        return $this->redirect(route('employees.show', $employee), navigate: true);
+    }
+
+    private function closeModal(): void
+    {
+        if ($this->inModal) {
+            // Validation throws before this is reached, so a modal that closes
+            // is a modal whose contents were written.
+            Flux::modal('employee-form')->close();
+        }
     }
 
     /** @return array<string, mixed> */
@@ -172,14 +229,18 @@ new class extends Component {
 }; ?>
 
 <section class="w-full">
-    @unless ($inModal)
+    @if ($inModal)
+        <flux:heading size="lg" class="mb-6">
+            {{ $employee?->fullName() ?? __('Add an employee') }}
+        </flux:heading>
+    @else
         <flux:heading size="xl">{{ $employee?->fullName() ?? __('Add an employee') }}</flux:heading>
         <flux:subheading>
             {{ __('The employee master. What the person maintains themselves is their PDS.') }}
         </flux:subheading>
 
         <x-auth-session-status class="mt-4" :status="session('status')" />
-    @endunless
+    @endif
 
     <form wire:submit="save" @class(['space-y-8', 'mt-6 max-w-3xl' => ! $inModal])>
         <div class="grid gap-6 sm:grid-cols-2">

@@ -81,7 +81,7 @@ class EmployeeFormTest extends TestCase
             ->set('form.first_name', 'Ana')
             ->set('form.last_name', 'Reyes')
             ->call('save')
-            ->assertRedirect(route('employees.edit', Employee::where('employee_number', '2026-0001')->sole()));
+            ->assertRedirect(route('employees.show', Employee::where('employee_number', '2026-0001')->sole()));
     }
 
     public function test_a_new_employee_cannot_take_an_existing_number(): void
@@ -147,16 +147,39 @@ class EmployeeFormTest extends TestCase
             ->assertOk();
     }
 
-    public function test_an_employee_cannot_open_the_edit_screen(): void
+    public function test_opening_a_row_for_editing_re_asks_instead_of_trusting_mount(): void
     {
-        // The employee master belongs to HR. What the person maintains is their
-        // PDS, which is a different question with its own policy.
-        $user = $this->userWithRole('employee');
-        $own = Employee::factory()->create(['user_id' => $user->id]);
+        // The id arrives from the browser on a request of its own, long after
+        // mount() ran. An ability withdrawn in between has to stop the form
+        // from loading somebody's record into it.
+        $hr = $this->userWithRole('hr');
 
-        $this->actingAs($user)
-            ->get(route('employees.edit', ['employee' => $own->id]))
-            ->assertForbidden();
+        $component = Livewire::actingAs($hr)->test('pages::employees.form', ['inModal' => true]);
+
+        $hr->removeRole('hr');
+
+        $component->call('startEditing', $this->employee->id)->assertForbidden();
+    }
+
+    public function test_editing_loads_the_row_that_was_asked_for(): void
+    {
+        Livewire::actingAs($this->userWithRole('hr'))
+            ->test('pages::employees.form', ['inModal' => true])
+            ->call('startEditing', $this->employee->id)
+            ->assertSet('employeeId', $this->employee->id)
+            ->assertSet('form.last_name', 'Guico');
+    }
+
+    public function test_add_after_edit_starts_from_an_empty_form(): void
+    {
+        // One modal serves both jobs. Without the reset, Add carries the last
+        // employee's id and quietly overwrites them instead of creating one.
+        Livewire::actingAs($this->userWithRole('hr'))
+            ->test('pages::employees.form', ['inModal' => true])
+            ->call('startEditing', $this->employee->id)
+            ->call('startAdding')
+            ->assertSet('employeeId', null)
+            ->assertSet('form.last_name', null);
     }
 
     public function test_the_save_re_asks_instead_of_trusting_mount(): void
@@ -317,11 +340,16 @@ class EmployeeFormTest extends TestCase
         );
     }
 
-    public function test_the_list_offers_hr_an_edit_link(): void
+    public function test_the_list_offers_hr_view_and_edit_but_not_the_pds(): void
     {
+        // Taking somebody's whole record out of the system is a deliberate act.
+        // A Download link in a list of 134 rows is an easy one.
         $this->actingAs($this->userWithRole('hr'))
             ->get(route('employees.index'))
             ->assertOk()
-            ->assertSee(route('employees.edit', ['employee' => $this->employee->id]), escape: false);
+            ->assertSee(route('employees.show', ['employee' => $this->employee->id]), escape: false)
+            ->assertSee('edit-employee')
+            ->assertDontSee(route('pds.export', ['employee' => $this->employee->id]), escape: false)
+            ->assertDontSee(route('pds.personal-information', ['employee' => $this->employee->id]), escape: false);
     }
 }

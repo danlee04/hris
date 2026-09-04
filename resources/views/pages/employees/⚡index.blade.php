@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\Employee;
+use Livewire\Attributes\On;
 use Livewire\Attributes\Title;
 use Livewire\Attributes\Url;
 use Livewire\Component;
@@ -23,6 +24,13 @@ new #[Title('Employees')] class extends Component {
     {
         $this->resetPage();
     }
+
+    /**
+     * The nested form saved somebody. Nothing to do but render again — the row
+     * would otherwise keep showing the name it had before the edit.
+     */
+    #[On('employee-saved')]
+    public function refreshList(): void {}
 
     /** @return array<string, mixed> */
     public function with(): array
@@ -53,11 +61,16 @@ new #[Title('Employees')] class extends Component {
         </div>
 
         @can('create', App\Models\Employee::class)
-            <flux:modal.trigger name="add-employee">
-                <flux:button variant="primary" icon="plus" size="sm">
-                    {{ __('Add an employee') }}
-                </flux:button>
-            </flux:modal.trigger>
+            {{-- Through the server, not straight to the modal: the form has to
+                 be emptied of whatever Edit last put in it. --}}
+            <flux:button
+                wire:click="$dispatch('add-employee')"
+                variant="primary"
+                icon="plus"
+                size="sm"
+            >
+                {{ __('Add an employee') }}
+            </flux:button>
         @endcan
     </div>
 
@@ -97,14 +110,26 @@ new #[Title('Employees')] class extends Component {
                     <flux:table.cell>
                         {{-- Every link is guarded so none appears to anyone who
                              would only be shown a 403 on the other side.
-                             Opening or downloading somebody else's PDS is
-                             recorded either way. Edit is the employee master;
-                             it answers to a different ability than the PDS. --}}
+
+                             The PDS is not here. Opening or downloading
+                             somebody's record is a deliberate act, and a link
+                             sitting in a list of 134 rows is an easy one. It
+                             lives on the employee's own page, where you have
+                             already said whose record you meant. --}}
                         <div class="flex gap-3 text-sm">
+                            @can('view', $employee)
+                                <flux:link
+                                    :href="route('employees.show', ['employee' => $employee->id])"
+                                    wire:navigate
+                                >
+                                    {{ __('View') }}
+                                </flux:link>
+                            @endcan
+
                             @can('update', $employee)
                                 <flux:link
-                                    :href="route('employees.edit', ['employee' => $employee->id])"
-                                    wire:navigate
+                                    href="#"
+                                    wire:click.prevent="$dispatch('edit-employee', { id: {{ $employee->id }} })"
                                 >
                                     {{ __('Edit') }}
                                 </flux:link>
@@ -116,24 +141,6 @@ new #[Title('Employees')] class extends Component {
                                     wire:navigate
                                 >
                                     {{ __('Leave') }}
-                                </flux:link>
-                            @endcan
-
-                            @can('viewPds', $employee)
-                                <flux:link
-                                    :href="route('pds.personal-information', ['employee' => $employee->id])"
-                                    wire:navigate
-                                >
-                                    {{ __('Open') }}
-                                </flux:link>
-                            @endcan
-
-                            @can('exportPds', $employee)
-                                <flux:link
-                                    :href="route('pds.export', ['employee' => $employee->id])"
-                                    wire:navigate
-                                >
-                                    {{ __('Download') }}
                                 </flux:link>
                             @endcan
                         </div>
@@ -151,14 +158,15 @@ new #[Title('Employees')] class extends Component {
 
     @can('create', App\Models\Employee::class)
         {{--
-            The same component the edit page routes to, rendered nested. Not a
-            second copy of the form: one set of fields, one set of rules, one
-            place a column has to be added. It authorises itself on mount and
-            again on save, so nesting it grants nothing.
-        --}}
-        <flux:modal name="add-employee" class="w-full md:max-w-2xl">
-            <flux:heading size="lg" class="mb-6">{{ __('Add an employee') }}</flux:heading>
+            One form, nested once, serving both Add and Edit for every row. The
+            row dispatches an id; the form loads it and opens itself. Nesting
+            one per row would mount 25 components to use one.
 
+            Not a second copy of the form either: one set of fields, one set of
+            rules, one place a column has to be added. It authorises itself on
+            mount and again on save, so nesting it grants nothing.
+        --}}
+        <flux:modal name="employee-form" class="w-full md:max-w-2xl">
             @livewire('pages::employees.form', ['inModal' => true])
         </flux:modal>
     @endcan

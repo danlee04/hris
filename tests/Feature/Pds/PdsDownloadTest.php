@@ -131,12 +131,23 @@ class PdsDownloadTest extends TestCase
             ->assertFileDownloaded();
     }
 
-    public function test_the_employee_list_offers_hr_a_download_link(): void
+    public function test_the_download_is_offered_on_the_employees_own_page_not_the_list(): void
     {
-        $this->actingAs($this->userWithRole('hr'))
+        // Taking somebody's whole record out of the system is a deliberate act,
+        // and a link in a list of 134 rows is an easy one. Reaching the page
+        // means HR has already said whose record they meant.
+        $hr = $this->userWithRole('hr');
+        $link = route('pds.export', ['employee' => $this->employee->id]);
+
+        $this->actingAs($hr)
             ->get(route('employees.index'))
             ->assertOk()
-            ->assertSee(route('pds.export', ['employee' => $this->employee->id]), escape: false);
+            ->assertDontSee($link, escape: false);
+
+        $this->actingAs($hr)
+            ->get(route('employees.show', ['employee' => $this->employee->id]))
+            ->assertOk()
+            ->assertSee($link, escape: false);
     }
 
     public function test_the_download_button_sits_at_the_top_of_every_section(): void

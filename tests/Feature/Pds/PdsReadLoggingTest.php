@@ -121,11 +121,21 @@ class PdsReadLoggingTest extends TestCase
             ->assertSee('read');
     }
 
-    public function test_the_employee_list_offers_hr_a_link_into_each_pds(): void
+    public function test_the_way_into_a_pds_is_the_employees_own_page(): void
     {
-        $this->actingAs($this->userWithRole('hr'))
+        // Not the list. Reading somebody else's PDS is recorded, and a link in
+        // a list of 134 rows makes it a click rather than a decision.
+        $hr = $this->userWithRole('hr');
+        $link = route('pds.personal-information', ['employee' => $this->employee->id]);
+
+        $this->actingAs($hr)
             ->get(route('employees.index'))
             ->assertOk()
-            ->assertSee(route('pds.personal-information', ['employee' => $this->employee->id]), escape: false);
+            ->assertDontSee($link, escape: false);
+
+        $this->actingAs($hr)
+            ->get(route('employees.show', ['employee' => $this->employee->id]))
+            ->assertOk()
+            ->assertSee($link, escape: false);
     }
 }
