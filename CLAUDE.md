@@ -1,8 +1,9 @@
 # DTRC HRIS
 
 A Human Resource Information System for a Philippine government hospital.
-Phase 1a (employee master, roles, CSV import, audit trail) is complete;
-Phase 1b (the CSC Personal Data Sheet) is next.
+Phase 1 is complete: the employee master, roles, CSV import and audit trail
+(1a), the nine PDS sections (1b), and the CS Form 212 export (1c). Phase 2 —
+leave and DTR — has no spec yet.
 
 - Laravel 13 on PHP 8.3, Livewire 4, Flux UI, Tailwind v4, Fortify, MySQL 8
 - Roles through `spatie/laravel-permission`: `admin`, `hr`, `employee`
@@ -132,6 +133,7 @@ birth because those columns were `varchar`.
 | `docs/superpowers/specs/` | The design this is built from |
 | `docs/superpowers/plans/` | Task-by-task implementation plans |
 | `php artisan employees:import <path>` | Bulk employee load; same parser and importer as the screen |
+| `php artisan hris:create-admin` | The first way in on a fresh install. Registration is closed and no seeder makes an admin |
 
 ## Known open problem
 
