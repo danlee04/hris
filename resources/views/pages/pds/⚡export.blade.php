@@ -66,12 +66,14 @@ new #[Title('Download PDS')] class extends Component {
 }; ?>
 
 <section class="w-full">
-    <flux:heading size="xl">{{ __('Download PDS') }}</flux:heading>
-    <flux:subheading>
+    {{-- No header button here: the page you would go to is this one. --}}
+    <x-pds.page-header
+        :title="__('Download PDS')"
+        :employee="request()->integer('employee') ?: null"
+        :download="false"
+    >
         {{ __('CS Form 212 (Revised 2026), filled from what is stored here.') }}
-    </flux:subheading>
-
-    <x-pds.section-nav :employee="request()->integer('employee') ?: null" class="mt-6" />
+    </x-pds.page-header>
 
     @php
         $empty = collect($sections)->where('complete', false);

@@ -138,4 +138,22 @@ class PdsDownloadTest extends TestCase
             ->assertOk()
             ->assertSee(route('pds.export', ['employee' => $this->employee->id]), escape: false);
     }
+
+    public function test_the_download_button_sits_at_the_top_of_every_section(): void
+    {
+        // It used to be the last tab. An employee filling in their PDS wants
+        // the file, not the last tab.
+        $this->actingAs($this->owner)
+            ->get(route('pds.personal-information'))
+            ->assertSee('Download PDS')
+            // Ahead of the tab bar, which is what "at the top" has to mean.
+            ->assertSeeInOrder(['Download PDS', 'Education']);
+    }
+
+    public function test_the_download_button_carries_the_employee_hr_is_looking_at(): void
+    {
+        $this->actingAs($this->userWithRole('hr'))
+            ->get(route('pds.personal-information', ['employee' => $this->employee->id]))
+            ->assertSee(route('pds.export', ['employee' => $this->employee->id]), escape: false);
+    }
 }

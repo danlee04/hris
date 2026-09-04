@@ -57,12 +57,9 @@ new #[Title('Learning and development')] class extends Component {
 }; ?>
 
 <section class="w-full">
-    <flux:heading size="xl">{{ __('Learning and development') }}</flux:heading>
-    <flux:subheading>
+    <x-pds.page-header :title="__('Learning and development')" :employee="request()->integer('employee') ?: null">
         {{ __('CS Form 212 (Revised 2026), item 29. Training programmes, seminars and workshops attended.') }}
-    </flux:subheading>
-
-    <x-pds.section-nav :employee="request()->integer('employee') ?: null" class="mt-6" />
+    </x-pds.page-header>
 
     <form wire:submit="save" class="mt-6 space-y-8">
         <x-pds.repeater :add-label="__('Add an intervention')">

@@ -3,6 +3,9 @@
     something. The list comes from PdsCompleteness so the tab bar and the
     dashboard cannot disagree about what the sections are.
 
+    Downloading is not one of the nine and is not a tab. It sits in the page
+    header, above this bar.
+
     `employee` is carried through so HR keeps looking at the same person when
     they move between sections.
 --}}
@@ -28,14 +31,4 @@
             {{ $section['label'] }}
         </flux:navbar.item>
     @endforeach
-
-    {{-- Not one of the nine sections; it is what you do once they are filled. --}}
-    <flux:navbar.item
-        :href="route('pds.export', $query)"
-        :current="request()->routeIs('pds.export')"
-        icon="arrow-down-tray"
-        wire:navigate
-    >
-        {{ __('Download') }}
-    </flux:navbar.item>
 </flux:navbar>

@@ -58,10 +58,9 @@ new #[Title('Civil service eligibility')] class extends Component {
 }; ?>
 
 <section class="w-full">
-    <flux:heading size="xl">{{ __('Civil service eligibility') }}</flux:heading>
-    <flux:subheading>{{ __('CS Form 212 (Revised 2026), item 27. List every eligibility and licence you hold.') }}</flux:subheading>
-
-    <x-pds.section-nav :employee="request()->integer('employee') ?: null" class="mt-6" />
+    <x-pds.page-header :title="__('Civil service eligibility')" :employee="request()->integer('employee') ?: null">
+        {{ __('CS Form 212 (Revised 2026), item 27. List every eligibility and licence you hold.') }}
+    </x-pds.page-header>
 
     <form wire:submit="save" class="mt-6 space-y-8">
         <x-pds.repeater :add-label="__('Add an eligibility')">

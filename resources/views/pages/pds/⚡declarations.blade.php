@@ -136,12 +136,9 @@ new #[Title('Declarations')] class extends Component {
 }; ?>
 
 <section class="w-full">
-    <flux:heading size="xl">{{ __('Declarations') }}</flux:heading>
-    <flux:subheading>
+    <x-pds.page-header :title="__('Declarations')" :employee="request()->integer('employee') ?: null">
         {{ __('CS Form 212 (Revised 2026), items 34 to 42. Answer yes and the details become required.') }}
-    </flux:subheading>
-
-    <x-pds.section-nav :employee="request()->integer('employee') ?: null" class="mt-6" />
+    </x-pds.page-header>
 
     <form wire:submit="save" class="mt-6 max-w-3xl space-y-8">
         <flux:callout icon="exclamation-triangle" variant="warning">

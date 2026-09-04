@@ -98,10 +98,9 @@ new #[Title('Personal information')] class extends Component {
 }; ?>
 
 <section class="w-full">
-    <flux:heading size="xl">{{ __('Personal information') }}</flux:heading>
-    <flux:subheading>{{ __('CS Form 212 (Revised 2026), items 1 to 21.') }}</flux:subheading>
-
-    <x-pds.section-nav :employee="request()->integer('employee') ?: null" class="mt-6" />
+    <x-pds.page-header :title="__('Personal information')" :employee="request()->integer('employee') ?: null">
+        {{ __('CS Form 212 (Revised 2026), items 1 to 21.') }}
+    </x-pds.page-header>
 
     <form wire:submit="save" class="mt-6 max-w-3xl space-y-8">
         <div class="grid gap-6 sm:grid-cols-2">

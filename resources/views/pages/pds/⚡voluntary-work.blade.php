@@ -55,12 +55,9 @@ new #[Title('Voluntary work')] class extends Component {
 }; ?>
 
 <section class="w-full">
-    <flux:heading size="xl">{{ __('Voluntary work') }}</flux:heading>
-    <flux:subheading>
+    <x-pds.page-header :title="__('Voluntary work')" :employee="request()->integer('employee') ?: null">
         {{ __('CS Form 212 (Revised 2026), item 30. Involvement in civic or non-government organizations.') }}
-    </flux:subheading>
-
-    <x-pds.section-nav :employee="request()->integer('employee') ?: null" class="mt-6" />
+    </x-pds.page-header>
 
     <form wire:submit="save" class="mt-6 space-y-8">
         <x-pds.repeater :add-label="__('Add voluntary work')">

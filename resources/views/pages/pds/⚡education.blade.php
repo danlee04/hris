@@ -65,10 +65,9 @@ new #[Title('Educational background')] class extends Component {
 }; ?>
 
 <section class="w-full">
-    <flux:heading size="xl">{{ __('Educational background') }}</flux:heading>
-    <flux:subheading>{{ __('CS Form 212 (Revised 2026), item 26. Add as many entries per level as you hold.') }}</flux:subheading>
-
-    <x-pds.section-nav :employee="request()->integer('employee') ?: null" class="mt-6" />
+    <x-pds.page-header :title="__('Educational background')" :employee="request()->integer('employee') ?: null">
+        {{ __('CS Form 212 (Revised 2026), item 26. Add as many entries per level as you hold.') }}
+    </x-pds.page-header>
 
     <form wire:submit="save" class="mt-6 space-y-8">
         <x-pds.repeater :add-label="__('Add an entry')">
