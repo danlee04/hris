@@ -110,6 +110,15 @@ new #[Title('Employees')] class extends Component {
                                 </flux:link>
                             @endcan
 
+                            @can('leave.manage')
+                                <flux:link
+                                    :href="route('leave.ledger', ['employee' => $employee->id])"
+                                    wire:navigate
+                                >
+                                    {{ __('Leave') }}
+                                </flux:link>
+                            @endcan
+
                             @can('viewPds', $employee)
                                 <flux:link
                                     :href="route('pds.personal-information', ['employee' => $employee->id])"
