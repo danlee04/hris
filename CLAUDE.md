@@ -135,6 +135,14 @@ birth because those columns were `varchar`.
 | `php artisan employees:import <path>` | Bulk employee load; same parser and importer as the screen |
 | `php artisan hris:create-admin` | The first way in on a fresh install. Registration is closed and no seeder makes an admin |
 
+**Spell it `organization`, with a z.** `OrganizationSeeder` set the precedent and
+the routes, views and tests follow it. User-facing text says "Organization" too;
+one spelling, not two.
+
+**Divisions, sections and positions are never deleted, only deactivated.** The
+`employees` foreign keys null on delete, so removing a position would silently
+blank it on everyone holding it. `is_active` exists on all three for this.
+
 ## Known open problem
 
 **The Import button does nothing in Dan's browser.** The click never reaches the

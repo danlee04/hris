@@ -40,6 +40,12 @@
                         </flux:sidebar.item>
                     @endcan
 
+                    @can('org.manage')
+                        <flux:sidebar.item icon="building-office-2" :href="route('organization.divisions')" :current="request()->routeIs('organization.*')" wire:navigate>
+                            {{ __('Organization') }}
+                        </flux:sidebar.item>
+                    @endcan
+
                     @can('audit.view')
                         <flux:sidebar.item icon="clipboard-document-list" :href="route('audit.index')" :current="request()->routeIs('audit.*')" wire:navigate>
                             {{ __('Audit log') }}
