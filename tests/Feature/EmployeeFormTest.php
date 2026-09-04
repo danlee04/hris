@@ -13,7 +13,7 @@ use Livewire\Livewire;
 use Spatie\Activitylog\Models\Activity;
 use Tests\TestCase;
 
-class EmployeeEditTest extends TestCase
+class EmployeeFormTest extends TestCase
 {
     use RefreshDatabase;
 
@@ -42,12 +42,109 @@ class EmployeeEditTest extends TestCase
     public function test_hr_corrects_a_name(): void
     {
         Livewire::actingAs($this->userWithRole('hr'))
-            ->test('pages::employees.edit', ['employee' => $this->employee])
+            ->test('pages::employees.form', ['employee' => $this->employee])
             ->set('form.last_name', 'Lao Guico')
             ->call('save')
             ->assertHasNoErrors();
 
         $this->assertSame('Lao Guico', $this->employee->fresh()->last_name);
+    }
+
+    public function test_hr_adds_an_employee(): void
+    {
+        Livewire::actingAs($this->userWithRole('hr'))
+            ->test('pages::employees.form')
+            ->set('form.employee_number', '2026-0001')
+            ->set('form.first_name', 'Ana')
+            ->set('form.last_name', 'Reyes')
+            ->call('save')
+            ->assertHasNoErrors();
+
+        $this->assertDatabaseHas('employees', [
+            'employee_number' => '2026-0001',
+            'last_name' => 'Reyes',
+            // The column defaults to these; the blank form has to agree with it
+            // rather than write a second, quieter default of its own.
+            'employment_status' => 'permanent',
+            'is_active' => true,
+        ]);
+    }
+
+    public function test_adding_lands_on_the_record_just_created(): void
+    {
+        // Staying on employees/create makes the next Save look like a second
+        // person, and the unique employee number is the only thing that would
+        // say otherwise.
+        Livewire::actingAs($this->userWithRole('hr'))
+            ->test('pages::employees.form')
+            ->set('form.employee_number', '2026-0001')
+            ->set('form.first_name', 'Ana')
+            ->set('form.last_name', 'Reyes')
+            ->call('save')
+            ->assertRedirect(route('employees.edit', Employee::where('employee_number', '2026-0001')->sole()));
+    }
+
+    public function test_a_new_employee_cannot_take_an_existing_number(): void
+    {
+        Livewire::actingAs($this->userWithRole('hr'))
+            ->test('pages::employees.form')
+            ->set('form.employee_number', '2008-0142')
+            ->set('form.first_name', 'Ana')
+            ->set('form.last_name', 'Reyes')
+            ->call('save')
+            ->assertHasErrors('form.employee_number');
+
+        $this->assertDatabaseCount('employees', 1);
+    }
+
+    public function test_a_new_employee_cannot_be_a_second_chief_of_hospital(): void
+    {
+        // The incumbent check has to survive a null id, which is the case the
+        // edit screen never exercises.
+        Employee::factory()->create(['is_chief_of_hospital' => true, 'last_name' => 'Delos Santos']);
+
+        Livewire::actingAs($this->userWithRole('hr'))
+            ->test('pages::employees.form')
+            ->set('form.employee_number', '2026-0001')
+            ->set('form.first_name', 'Ana')
+            ->set('form.last_name', 'Reyes')
+            ->set('form.is_chief_of_hospital', true)
+            ->call('save')
+            ->assertHasErrors('form.is_chief_of_hospital');
+
+        $this->assertDatabaseMissing('employees', ['employee_number' => '2026-0001']);
+    }
+
+    public function test_an_employee_cannot_open_the_add_screen(): void
+    {
+        $this->actingAs($this->userWithRole('employee'))
+            ->get(route('employees.create'))
+            ->assertForbidden();
+    }
+
+    public function test_the_list_carries_the_add_modal_for_hr_only(): void
+    {
+        // The modal holds a live component, so an employee seeing it would mean
+        // the form was mounted for them regardless of what the button says.
+        $this->actingAs($this->userWithRole('hr'))
+            ->get(route('employees.index'))
+            ->assertOk()
+            ->assertSee('add-employee');
+
+        $viewer = $this->userWithRole('employee');
+        $viewer->givePermissionTo('employees.view');
+
+        $this->actingAs($viewer)
+            ->get(route('employees.index'))
+            ->assertOk()
+            ->assertDontSee('add-employee');
+    }
+
+    public function test_the_add_form_still_has_its_own_page(): void
+    {
+        $this->actingAs($this->userWithRole('hr'))
+            ->get(route('employees.create'))
+            ->assertOk();
     }
 
     public function test_an_employee_cannot_open_the_edit_screen(): void
@@ -70,7 +167,7 @@ class EmployeeEditTest extends TestCase
         $hr = $this->userWithRole('hr');
 
         $component = Livewire::actingAs($hr)
-            ->test('pages::employees.edit', ['employee' => $this->employee]);
+            ->test('pages::employees.form', ['employee' => $this->employee]);
 
         $hr->removeRole('hr');
 
@@ -86,7 +183,7 @@ class EmployeeEditTest extends TestCase
         Employee::factory()->create(['employee_number' => '2010-0001']);
 
         Livewire::actingAs($this->userWithRole('hr'))
-            ->test('pages::employees.edit', ['employee' => $this->employee])
+            ->test('pages::employees.form', ['employee' => $this->employee])
             ->set('form.employee_number', '2010-0001')
             ->call('save')
             ->assertHasErrors('form.employee_number');
@@ -97,7 +194,7 @@ class EmployeeEditTest extends TestCase
         // The uniqueness rule has to ignore the record being edited, or nobody
         // could ever save a form they only half changed.
         Livewire::actingAs($this->userWithRole('hr'))
-            ->test('pages::employees.edit', ['employee' => $this->employee])
+            ->test('pages::employees.form', ['employee' => $this->employee])
             ->set('form.first_name', 'Corrected')
             ->call('save')
             ->assertHasNoErrors();
@@ -112,7 +209,7 @@ class EmployeeEditTest extends TestCase
         $elsewhere = Division::factory()->create();
 
         Livewire::actingAs($this->userWithRole('hr'))
-            ->test('pages::employees.edit', ['employee' => $this->employee])
+            ->test('pages::employees.form', ['employee' => $this->employee])
             ->set('form.division_id', $elsewhere->id)
             ->set('form.section_id', $section->id)
             ->call('save')
@@ -128,7 +225,7 @@ class EmployeeEditTest extends TestCase
         $section = Section::factory()->create();
 
         Livewire::actingAs($this->userWithRole('hr'))
-            ->test('pages::employees.edit', ['employee' => $this->employee])
+            ->test('pages::employees.form', ['employee' => $this->employee])
             ->set('form.division_id', $section->division_id)
             ->set('form.section_id', $section->id)
             ->call('save')
@@ -143,7 +240,7 @@ class EmployeeEditTest extends TestCase
         $other = Division::factory()->create();
 
         Livewire::actingAs($this->userWithRole('hr'))
-            ->test('pages::employees.edit', ['employee' => $this->employee])
+            ->test('pages::employees.form', ['employee' => $this->employee])
             ->set('form.division_id', $section->division_id)
             ->set('form.section_id', $section->id)
             ->set('form.division_id', $other->id)
@@ -159,7 +256,7 @@ class EmployeeEditTest extends TestCase
         ]);
 
         Livewire::actingAs($this->userWithRole('hr'))
-            ->test('pages::employees.edit', ['employee' => $this->employee])
+            ->test('pages::employees.form', ['employee' => $this->employee])
             ->set('form.is_chief_of_hospital', true)
             ->call('save')
             ->assertHasErrors('form.is_chief_of_hospital')
@@ -173,7 +270,7 @@ class EmployeeEditTest extends TestCase
         $this->employee->update(['is_chief_of_hospital' => true]);
 
         Livewire::actingAs($this->userWithRole('hr'))
-            ->test('pages::employees.edit', ['employee' => $this->employee])
+            ->test('pages::employees.form', ['employee' => $this->employee])
             ->set('form.first_name', 'Corrected')
             ->call('save')
             ->assertHasNoErrors();
@@ -185,7 +282,7 @@ class EmployeeEditTest extends TestCase
         Employee::factory()->create(['biometric_id' => '77']);
 
         Livewire::actingAs($this->userWithRole('hr'))
-            ->test('pages::employees.edit', ['employee' => $this->employee])
+            ->test('pages::employees.form', ['employee' => $this->employee])
             ->set('form.biometric_id', '77')
             ->call('save')
             ->assertHasErrors('form.biometric_id');
@@ -194,7 +291,7 @@ class EmployeeEditTest extends TestCase
     public function test_a_future_hire_date_is_refused(): void
     {
         Livewire::actingAs($this->userWithRole('hr'))
-            ->test('pages::employees.edit', ['employee' => $this->employee])
+            ->test('pages::employees.form', ['employee' => $this->employee])
             ->set('form.date_hired', now()->addYear()->format('Y-m-d'))
             ->call('save')
             ->assertHasErrors('form.date_hired');
@@ -205,7 +302,7 @@ class EmployeeEditTest extends TestCase
         $hr = $this->userWithRole('hr');
 
         Livewire::actingAs($hr)
-            ->test('pages::employees.edit', ['employee' => $this->employee])
+            ->test('pages::employees.form', ['employee' => $this->employee])
             ->set('form.employment_status', EmploymentStatus::Coterminous->value)
             ->call('save');
 

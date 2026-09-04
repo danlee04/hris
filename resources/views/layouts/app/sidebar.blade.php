@@ -28,12 +28,6 @@
                         </flux:sidebar.item>
                     @endcan
 
-                    @can('import', App\Models\Employee::class)
-                        <flux:sidebar.item icon="arrow-up-tray" :href="route('employees.import')" :current="request()->routeIs('employees.import')" wire:navigate>
-                            {{ __('Import employees') }}
-                        </flux:sidebar.item>
-                    @endcan
-
                     @can('issueAccount', App\Models\Employee::class)
                         <flux:sidebar.item icon="key" :href="route('employees.issue-account')" :current="request()->routeIs('employees.issue-account')" wire:navigate>
                             {{ __('Issue a login') }}

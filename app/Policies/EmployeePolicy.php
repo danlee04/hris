@@ -30,6 +30,16 @@ class EmployeePolicy
         return $user->can('employees.manage');
     }
 
+    /**
+     * Same ability as update. Adding a person and correcting one are the same
+     * job done by the same office, and a separate permission would be one more
+     * thing to forget to grant.
+     */
+    public function create(User $user): bool
+    {
+        return $user->can('employees.manage');
+    }
+
     public function import(User $user): bool
     {
         return $user->can('employees.import');

@@ -46,8 +46,20 @@ new #[Title('Employees')] class extends Component {
 }; ?>
 
 <section class="w-full">
-    <flux:heading size="xl">{{ __('Employees') }}</flux:heading>
-    <flux:subheading>{{ __('The plantilla and everyone on it.') }}</flux:subheading>
+    <div class="flex flex-wrap items-start justify-between gap-4">
+        <div>
+            <flux:heading size="xl">{{ __('Employees') }}</flux:heading>
+            <flux:subheading>{{ __('The plantilla and everyone on it.') }}</flux:subheading>
+        </div>
+
+        @can('create', App\Models\Employee::class)
+            <flux:modal.trigger name="add-employee">
+                <flux:button variant="primary" icon="plus" size="sm">
+                    {{ __('Add an employee') }}
+                </flux:button>
+            </flux:modal.trigger>
+        @endcan
+    </div>
 
     <div class="mt-6 max-w-sm">
         <flux:input
@@ -121,10 +133,24 @@ new #[Title('Employees')] class extends Component {
             @empty
                 <flux:table.row>
                     <flux:table.cell colspan="6" class="text-center">
-                        {{ __('No employees yet. Import them from a CSV to get started.') }}
+                        {{ __('No employees yet. Add one, or load a roster with php artisan employees:import.') }}
                     </flux:table.cell>
                 </flux:table.row>
             @endforelse
         </flux:table.rows>
     </flux:table>
+
+    @can('create', App\Models\Employee::class)
+        {{--
+            The same component the edit page routes to, rendered nested. Not a
+            second copy of the form: one set of fields, one set of rules, one
+            place a column has to be added. It authorises itself on mount and
+            again on save, so nesting it grants nothing.
+        --}}
+        <flux:modal name="add-employee" class="w-full md:max-w-2xl">
+            <flux:heading size="lg" class="mb-6">{{ __('Add an employee') }}</flux:heading>
+
+            @livewire('pages::employees.form', ['inModal' => true])
+        </flux:modal>
+    @endcan
 </section>

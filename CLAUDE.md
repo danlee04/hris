@@ -132,7 +132,7 @@ birth because those columns were `varchar`.
 | `app/Policies/` | Every ownership question |
 | `docs/superpowers/specs/` | The design this is built from |
 | `docs/superpowers/plans/` | Task-by-task implementation plans |
-| `php artisan employees:import <path>` | Bulk employee load; same parser and importer as the screen |
+| `php artisan employees:import <path>` | Bulk employee load. The only import path; the screen was removed |
 | `php artisan hris:create-admin` | The first way in on a fresh install. Registration is closed and no seeder makes an admin |
 
 **Spell it `organization`, with a z.** `OrganizationSeeder` set the precedent and
@@ -143,10 +143,15 @@ one spelling, not two.
 `employees` foreign keys null on delete, so removing a position would silently
 blank it on everyone holding it. `is_active` exists on all three for this.
 
-## Known open problem
+## The CSV import
 
-**The Import button does nothing in Dan's browser.** The click never reaches the
-server: no log entry, no error, nothing written. The same code passes every test
-and the CLI command works. Unresolved. Every PDS section is a Livewire form of
-the same shape, so Phase 1b Task 1 is deliberately a single vertical slice —
-prove one Save in a browser before building eight more.
+**The import screen was removed**, along with its Livewire page, route, sidebar
+item and tests. Its button never reached the server in Dan's browser — no log
+entry, no error, nothing written — while the same code passed every test and
+every other Livewire form on the machine worked. It was never diagnosed. Adding
+an employee is now a form; a roster still arrives through the CLI.
+
+**`php artisan employees:import <path>` stays**, and with it `EmployeeCsvParser`,
+`EmployeeImporter` and `ReferenceData`. That command is what loaded the real 134
+employees, and typing thirty-five job orders by hand is not an improvement on
+running it once.
