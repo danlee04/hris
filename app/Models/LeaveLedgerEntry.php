@@ -11,7 +11,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 #[Fillable([
     'employee_id', 'ledger', 'kind', 'days', 'effective_date',
-    'period', 'description', 'created_by_user_id',
+    'period', 'leave_application_id', 'description', 'created_by_user_id',
 ])]
 class LeaveLedgerEntry extends Model
 {
@@ -31,6 +31,12 @@ class LeaveLedgerEntry extends Model
     public function employee(): BelongsTo
     {
         return $this->belongsTo(Employee::class);
+    }
+
+    /** The application this hold, release or commit belongs to, if any. */
+    public function application(): BelongsTo
+    {
+        return $this->belongsTo(LeaveApplication::class, 'leave_application_id');
     }
 
     public function createdBy(): BelongsTo
