@@ -20,6 +20,10 @@
                         <flux:sidebar.item icon="identification" :href="route('pds.personal-information')" :current="request()->routeIs('pds.*')" wire:navigate>
                             {{ __('My PDS') }}
                         </flux:sidebar.item>
+
+                        <flux:sidebar.item icon="calendar" :href="route('leave.mine')" :current="request()->routeIs('leave.mine')" wire:navigate>
+                            {{ __('My leave') }}
+                        </flux:sidebar.item>
                     @endif
 
                     @can('viewAny', App\Models\Employee::class)

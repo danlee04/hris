@@ -1,0 +1,282 @@
+<?php
+
+use App\Models\Employee;
+use App\Models\LeaveApplication;
+use App\Models\LeaveType;
+use App\Services\Leave\LeaveBalance;
+use App\Services\Leave\LeaveDecision;
+use App\Services\Leave\LeaveFiler;
+use Illuminate\Validation\ValidationException;
+use Livewire\Attributes\Title;
+use Livewire\Component;
+use Livewire\WithPagination;
+
+new #[Title('My leave')] class extends Component {
+    use WithPagination;
+
+    /** @var array<string, mixed> */
+    public array $form = [];
+
+    /** The application being corrected after it was returned, if any. */
+    public ?int $refilingId = null;
+
+    public function mount(): void
+    {
+        // Not a policy question: this screen is about the person signed in, and
+        // an account with no employee record has nothing to show.
+        abort_if($this->applicant() === null, 403, 'This account is not linked to an employee record.');
+
+        $this->emptyForm();
+    }
+
+    public function startApplying(): void
+    {
+        // The same modal served a correction a moment ago. Without this, the
+        // new application would silently overwrite that one.
+        $this->refilingId = null;
+        $this->emptyForm();
+        $this->resetValidation();
+
+        Flux::modal('leave-form')->show();
+    }
+
+    public function startRefiling(int $id): void
+    {
+        $application = LeaveApplication::findOrFail($id);
+
+        // The id arrives from the browser, so it is asked about here.
+        $this->authorize('refile', $application);
+
+        $this->refilingId = $application->id;
+
+        $this->form = [
+            'leave_type_id' => $application->leave_type_id,
+            'date_from' => $application->date_from->toDateString(),
+            'date_to' => $application->date_to->toDateString(),
+            'days' => $application->days,
+            'commutation' => $application->commutation,
+            'details' => $application->details ?? [],
+        ];
+
+        $this->resetValidation();
+
+        Flux::modal('leave-form')->show();
+    }
+
+    public function file(): void
+    {
+        $applicant = $this->applicant();
+
+        abort_if($applicant === null, 403);
+
+        $filer = app(LeaveFiler::class);
+
+        try {
+            if ($this->refilingId) {
+                $application = LeaveApplication::findOrFail($this->refilingId);
+
+                // refilingId came back from the browser, so it is asked about
+                // again rather than trusted.
+                $this->authorize('refile', $application);
+
+                $filer->refile($application, $this->form);
+            } else {
+                $filer->file($applicant, $this->form);
+            }
+        } catch (ValidationException $e) {
+            // The services speak in their own field names. Show their words
+            // against this form's fields rather than inventing a second set
+            // that would drift from them. The modal stays open, with whatever
+            // was typed still in it.
+            foreach ($e->validator->errors()->messages() as $field => $messages) {
+                $this->addError("form.{$field}", $messages[0]);
+            }
+
+            return;
+        }
+
+        $this->refilingId = null;
+        $this->emptyForm();
+
+        Flux::modal('leave-form')->close();
+
+        Flux::toast(variant: 'success', text: __('Application filed.'));
+    }
+
+    public function cancel(int $id): void
+    {
+        $application = LeaveApplication::findOrFail($id);
+
+        $this->authorize('cancel', $application);
+
+        app(LeaveDecision::class)->cancel($application);
+
+        Flux::toast(variant: 'success', text: __('Application cancelled.'));
+    }
+
+    private function applicant(): ?Employee
+    {
+        return auth()->user()?->employee;
+    }
+
+    private function emptyForm(): void
+    {
+        $this->form = [
+            'leave_type_id' => null,
+            'date_from' => null,
+            'date_to' => null,
+            'days' => null,
+            'commutation' => 'not_requested',
+            'details' => [],
+        ];
+    }
+
+    /** @return array<string, mixed> */
+    public function with(): array
+    {
+        $applicant = $this->applicant();
+
+        return [
+            'balances' => $applicant ? app(LeaveBalance::class)->for($applicant) : [],
+            'types' => $applicant?->employment_status
+                ? LeaveType::availableTo($applicant->employment_status)->get()
+                : collect(),
+            'applications' => LeaveApplication::query()
+                ->where('employee_id', $applicant?->id)
+                ->with(['type', 'approvals.approver'])
+                ->latest('id')
+                ->paginate(10),
+        ];
+    }
+}; ?>
+
+<section class="w-full">
+    <div class="flex flex-wrap items-start justify-between gap-4">
+        <div>
+            <flux:heading size="xl">{{ __('My leave') }}</flux:heading>
+            <flux:subheading>{{ __('What you hold, and what you have asked for.') }}</flux:subheading>
+        </div>
+
+        <flux:button wire:click="startApplying" variant="primary" icon="plus" size="sm">
+            {{ __('Apply for leave') }}
+        </flux:button>
+    </div>
+
+    {{-- The balance already has every pending hold taken out of it, which is
+         what makes it the number worth showing. --}}
+    <div class="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        @foreach ($balances as $balance)
+            <flux:card wire:key="balance-{{ $balance['ledger'] }}">
+                <flux:subheading>{{ $balance['label'] }}</flux:subheading>
+                <flux:heading size="xl">{{ number_format($balance['days'], 2) }}</flux:heading>
+            </flux:card>
+        @endforeach
+    </div>
+
+    <flux:table class="mt-8" :paginate="$applications">
+        <flux:table.columns>
+            <flux:table.column>{{ __('Type') }}</flux:table.column>
+            <flux:table.column>{{ __('Dates') }}</flux:table.column>
+            <flux:table.column>{{ __('Days') }}</flux:table.column>
+            <flux:table.column>{{ __('Status') }}</flux:table.column>
+            <flux:table.column>{{ __('Waiting on') }}</flux:table.column>
+            <flux:table.column></flux:table.column>
+        </flux:table.columns>
+
+        <flux:table.rows>
+            @forelse ($applications as $application)
+                <flux:table.row wire:key="application-{{ $application->id }}">
+                    <flux:table.cell class="font-medium">{{ $application->type->name }}</flux:table.cell>
+                    <flux:table.cell>
+                        {{ $application->date_from->format('d/m/Y') }} –
+                        {{ $application->date_to->format('d/m/Y') }}
+                    </flux:table.cell>
+                    <flux:table.cell>
+                        {{ number_format($application->days, 2) }}
+                        @if ($application->days_without_pay > 0)
+                            <flux:text class="text-xs">
+                                {{ __(':days without pay', ['days' => number_format($application->days_without_pay, 2)]) }}
+                            </flux:text>
+                        @endif
+                    </flux:table.cell>
+                    <flux:table.cell>
+                        <flux:badge size="sm" :color="$application->status->color()">
+                            {{ $application->status->label() }}
+                        </flux:badge>
+                    </flux:table.cell>
+                    <flux:table.cell>
+                        @php $current = $application->currentApproval(); @endphp
+                        {{ $current?->approver?->fullName() ?? $current?->step->label() ?? '—' }}
+                    </flux:table.cell>
+                    <flux:table.cell>
+                        <div class="flex gap-3 text-sm">
+                            @can('cancel', $application)
+                                <flux:link href="#" wire:click.prevent="cancel({{ $application->id }})">
+                                    {{ __('Cancel') }}
+                                </flux:link>
+                            @endcan
+
+                            @can('refile', $application)
+                                <flux:link href="#" wire:click.prevent="startRefiling({{ $application->id }})">
+                                    {{ __('Correct and send again') }}
+                                </flux:link>
+                            @endcan
+                        </div>
+                    </flux:table.cell>
+                </flux:table.row>
+            @empty
+                <flux:table.row>
+                    <flux:table.cell colspan="6" class="text-center">
+                        {{ __('You have not applied for leave.') }}
+                    </flux:table.cell>
+                </flux:table.row>
+            @endforelse
+        </flux:table.rows>
+    </flux:table>
+
+    <flux:modal name="leave-form" class="w-full md:max-w-2xl">
+        <form wire:submit="file" class="space-y-6">
+            <flux:heading size="lg">
+                {{ $refilingId ? __('Correct and send again') : __('Apply for leave') }}
+            </flux:heading>
+
+            <flux:select wire:model="form.leave_type_id" :label="__('Type of leave')" :placeholder="__('Choose')">
+                @foreach ($types as $type)
+                    <flux:select.option wire:key="type-{{ $type->id }}" value="{{ $type->id }}">
+                        {{ $type->name }}
+                    </flux:select.option>
+                @endforeach
+            </flux:select>
+
+            <div class="grid gap-6 sm:grid-cols-3">
+                <flux:input wire:model="form.date_from" type="date" :label="__('First day')" />
+                <flux:input wire:model="form.date_to" type="date" :label="__('Last day')" />
+                <flux:input
+                    wire:model="form.days"
+                    type="number"
+                    step="0.5"
+                    :label="__('Working days')"
+                    :description="__('Half days allowed.')"
+                />
+            </div>
+
+            <flux:select wire:model="form.commutation" :label="__('Commutation')">
+                <flux:select.option value="not_requested">{{ __('Not requested') }}</flux:select.option>
+                <flux:select.option value="requested">{{ __('Requested') }}</flux:select.option>
+            </flux:select>
+
+            <flux:error name="form.leave_type_id" />
+            <flux:error name="form.date_from" />
+            <flux:error name="form.date_to" />
+            <flux:error name="form.days" />
+
+            <div class="flex justify-end gap-3">
+                <flux:modal.close>
+                    <flux:button type="button" variant="ghost">{{ __('Cancel') }}</flux:button>
+                </flux:modal.close>
+
+                <flux:button type="submit" variant="primary">{{ __('File it') }}</flux:button>
+            </div>
+        </form>
+    </flux:modal>
+</section>
