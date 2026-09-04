@@ -173,6 +173,27 @@ class LeaveFilerTest extends TestCase
         ]));
     }
 
+    public function test_a_leave_type_that_does_not_exist_is_refused_as_validation(): void
+    {
+        // findOrFail here surfaced as a 404 page. A leave type id arrives from
+        // the browser like everything else, and a wrong one is a bad answer to
+        // a question, not a missing page.
+        $this->expectException(ValidationException::class);
+
+        app(LeaveFiler::class)->file($this->applicant, $this->attributes([
+            'leave_type_id' => 99999,
+        ]));
+    }
+
+    public function test_no_leave_type_at_all_is_refused_as_validation(): void
+    {
+        $this->expectException(ValidationException::class);
+
+        app(LeaveFiler::class)->file($this->applicant, $this->attributes([
+            'leave_type_id' => null,
+        ]));
+    }
+
     public function test_a_date_range_that_runs_backwards_is_refused(): void
     {
         $this->expectException(ValidationException::class);

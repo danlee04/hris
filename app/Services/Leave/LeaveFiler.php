@@ -56,7 +56,16 @@ class LeaveFiler
     /** @param  array<string, mixed>  $attributes */
     private function write(Employee $applicant, array $attributes, ?LeaveApplication $existing): LeaveApplication
     {
-        $type = LeaveType::findOrFail($attributes['leave_type_id']);
+        // Not findOrFail. The id arrives from the browser like everything else,
+        // and a wrong one is a bad answer to a question — a 404 page tells the
+        // person nothing about which question.
+        $type = LeaveType::find($attributes['leave_type_id'] ?? null);
+
+        if ($type === null) {
+            throw ValidationException::withMessages([
+                'leave_type_id' => __('Choose the type of leave.'),
+            ]);
+        }
 
         $this->assertAllowed($applicant, $type, $attributes);
 
@@ -171,6 +180,19 @@ class LeaveFiler
             ]);
         }
 
+        // Asked before parsing. Carbon reads null as "now", so a form with no
+        // dates on it would pass every check below and fail at the database
+        // instead, as a 500 nobody can act on.
+        foreach (['date_from' => __('Say when the leave starts.'), 'date_to' => __('Say when it ends.')] as $field => $message) {
+            if (($attributes[$field] ?? '') === '') {
+                $errors[$field] = $message;
+            }
+        }
+
+        if ($errors !== []) {
+            throw ValidationException::withMessages($errors);
+        }
+
         $from = Carbon::parse($attributes['date_from']);
         $to = Carbon::parse($attributes['date_to']);
 
@@ -178,7 +200,7 @@ class LeaveFiler
             $errors['date_to'] = __('The last day is before the first.');
         }
 
-        if ((float) $attributes['days'] <= 0) {
+        if ((float) ($attributes['days'] ?? 0) <= 0) {
             $errors['days'] = __('Say how many days this is for.');
         }
 

@@ -196,6 +196,47 @@ class MyLeaveScreenTest extends TestCase
             ->assertSet('form.details', []);
     }
 
+    public function test_filing_without_choosing_a_type_says_so(): void
+    {
+        // This was a 404. The filer looked the type up with findOrFail before
+        // anything was validated, and Laravel renders a missing model as Not
+        // Found — so a person who forgot to pick a type got a broken page
+        // instead of a message.
+        Livewire::actingAs($this->user)
+            ->test('pages::leave.mine')
+            ->call('startApplying')
+            ->set('form.date_from', now()->addWeek()->toDateString())
+            ->set('form.date_to', now()->addWeek()->addDay()->toDateString())
+            ->set('form.days', 2)
+            ->call('file')
+            ->assertHasErrors('form.leave_type_id');
+
+        $this->assertDatabaseCount('leave_applications', 0);
+    }
+
+    public function test_filing_without_dates_says_so(): void
+    {
+        Livewire::actingAs($this->user)
+            ->test('pages::leave.mine')
+            ->call('startApplying')
+            ->set('form.leave_type_id', $this->vacation())
+            ->set('form.days', 2)
+            ->call('file')
+            ->assertHasErrors(['form.date_from', 'form.date_to']);
+    }
+
+    public function test_filing_without_days_says_so(): void
+    {
+        Livewire::actingAs($this->user)
+            ->test('pages::leave.mine')
+            ->call('startApplying')
+            ->set('form.leave_type_id', $this->vacation())
+            ->set('form.date_from', now()->addWeek()->toDateString())
+            ->set('form.date_to', now()->addWeek()->addDay()->toDateString())
+            ->call('file')
+            ->assertHasErrors('form.days');
+    }
+
     public function test_a_refused_filing_leaves_the_modal_open_with_the_typing_intact(): void
     {
         // Validation that closes the modal throws away everything the person
