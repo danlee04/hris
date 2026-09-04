@@ -64,6 +64,18 @@ class LeaveLedger
             __('Grant for :period', ['period' => $period]));
     }
 
+    /** Has this month already been posted for this employee and ledger? */
+    public function hasAccrued(Employee $employee, string $ledger, string $period): bool
+    {
+        return $this->hasPosted($employee, $ledger, LeaveLedgerKind::Accrual, $period);
+    }
+
+    /** Has this year's grant already been given? */
+    public function hasGranted(Employee $employee, string $ledger, string $year): bool
+    {
+        return $this->hasPosted($employee, $ledger, LeaveLedgerKind::Grant, $year);
+    }
+
     /** A correction, which must say what it is correcting. */
     public function adjust(Employee $employee, string $ledger, float $days, string $reason): LeaveLedgerEntry
     {
@@ -74,6 +86,15 @@ class LeaveLedger
         }
 
         return $this->write($employee, $ledger, LeaveLedgerKind::Adjustment, $days, null, null, trim($reason));
+    }
+
+    private function hasPosted(Employee $employee, string $ledger, LeaveLedgerKind $kind, string $period): bool
+    {
+        return LeaveLedgerEntry::where('employee_id', $employee->id)
+            ->where('ledger', $ledger)
+            ->where('kind', $kind)
+            ->where('period', $period)
+            ->exists();
     }
 
     private function writeOnce(
