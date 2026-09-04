@@ -40,6 +40,12 @@
                         </flux:sidebar.item>
                     @endcan
 
+                    @can('leave.manage')
+                        <flux:sidebar.item icon="calculator" :href="route('leave.accrual')" :current="request()->routeIs('leave.accrual')" wire:navigate>
+                            {{ __('Post leave credits') }}
+                        </flux:sidebar.item>
+                    @endcan
+
                     @can('leave.types.manage')
                         <flux:sidebar.item icon="calendar-days" :href="route('leave.types')" :current="request()->routeIs('leave.types')" wire:navigate>
                             {{ __('Leave types') }}
