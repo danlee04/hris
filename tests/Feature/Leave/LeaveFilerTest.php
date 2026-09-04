@@ -237,4 +237,62 @@ class LeaveFilerTest extends TestCase
 
         $this->assertDatabaseCount('leave_approvals', 4);
     }
+
+    public function test_the_details_are_kept_as_given(): void
+    {
+        // Item 6.B asks a different question of each type. A single free-text
+        // box could not fill the boxes the form actually prints.
+        app(LeaveLedger::class)->open($this->applicant, 'vacation', 10);
+
+        $application = app(LeaveFiler::class)->file($this->applicant, $this->attributes([
+            'details' => ['vacation_where' => 'within_philippines', 'vacation_detail' => 'Surigao City'],
+        ]));
+
+        $this->assertSame('within_philippines', $application->details['vacation_where']);
+        $this->assertSame('Surigao City', $application->details['vacation_detail']);
+    }
+
+    public function test_details_that_are_not_on_the_form_are_dropped(): void
+    {
+        // The array comes from the browser. Anything can be in it, and it is
+        // written to a column that ends up on a signed document.
+        app(LeaveLedger::class)->open($this->applicant, 'vacation', 10);
+
+        $application = app(LeaveFiler::class)->file($this->applicant, $this->attributes([
+            'details' => ['vacation_where' => 'abroad', 'injected' => 'anything'],
+        ]));
+
+        $this->assertArrayNotHasKey('injected', $application->details);
+        $this->assertSame('abroad', $application->details['vacation_where']);
+    }
+
+    public function test_empty_details_are_stored_as_null_not_as_an_empty_array(): void
+    {
+        app(LeaveLedger::class)->open($this->applicant, 'vacation', 10);
+
+        $application = app(LeaveFiler::class)->file($this->applicant, $this->attributes([
+            'details' => ['vacation_where' => '', 'sick_detail' => '   '],
+        ]));
+
+        $this->assertNull($application->details);
+    }
+
+    public function test_the_details_survive_a_refiling(): void
+    {
+        // A returned application is corrected, not retyped from nothing.
+        app(LeaveLedger::class)->open($this->applicant, 'vacation', 10);
+
+        $application = app(LeaveFiler::class)->file($this->applicant, $this->attributes([
+            'details' => ['vacation_where' => 'abroad', 'vacation_detail' => 'Singapore'],
+        ]));
+
+        $application->update(['status' => LeaveStatus::Returned]);
+        app(LeaveLedger::class)->releaseFor($application);
+
+        $refiled = app(LeaveFiler::class)->refile($application, $this->attributes([
+            'details' => ['vacation_where' => 'abroad', 'vacation_detail' => 'Singapore'],
+        ]));
+
+        $this->assertSame('Singapore', $refiled->details['vacation_detail']);
+    }
 }

@@ -164,6 +164,38 @@ class MyLeaveScreenTest extends TestCase
         $this->assertDatabaseCount('leave_applications', 0);
     }
 
+    public function test_the_form_collects_the_details_the_printed_form_asks_for(): void
+    {
+        // Without these, item 6.B of CS Form 6 prints blank and HR finishes it
+        // by hand — which is most of what this phase is meant to stop.
+        Livewire::actingAs($this->user)
+            ->test('pages::leave.mine')
+            ->call('startApplying')
+            ->set('form.leave_type_id', $this->vacation())
+            ->set('form.date_from', now()->addWeek()->toDateString())
+            ->set('form.date_to', now()->addWeek()->addDay()->toDateString())
+            ->set('form.days', 2)
+            ->set('form.details.vacation_where', 'within_philippines')
+            ->set('form.details.vacation_detail', 'Surigao City')
+            ->call('file')
+            ->assertHasNoErrors();
+
+        $application = LeaveApplication::sole();
+
+        $this->assertSame('Surigao City', $application->details['vacation_detail']);
+    }
+
+    public function test_applying_again_does_not_carry_the_last_application_details(): void
+    {
+        // One modal, two applications. A destination left behind from the last
+        // one would print on a sick leave.
+        Livewire::actingAs($this->user)
+            ->test('pages::leave.mine')
+            ->set('form.details.vacation_detail', 'Singapore')
+            ->call('startApplying')
+            ->assertSet('form.details', []);
+    }
+
     public function test_a_refused_filing_leaves_the_modal_open_with_the_typing_intact(): void
     {
         // Validation that closes the modal throws away everything the person

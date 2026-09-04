@@ -18,6 +18,18 @@ use Illuminate\Validation\ValidationException;
  */
 class LeaveFiler
 {
+    /**
+     * The questions item 6.B actually asks, one set per type of leave.
+     *
+     * @var list<string>
+     */
+    private const DETAIL_KEYS = [
+        'vacation_where', 'vacation_detail',
+        'sick_where', 'sick_detail',
+        'study_purpose', 'study_detail',
+        'women_detail',
+    ];
+
     public function __construct(
         private readonly LeaveRoute $route,
         private readonly LeaveLedger $ledger,
@@ -63,7 +75,7 @@ class LeaveFiler
                 'days' => (float) $attributes['days'],
                 'days_with_pay' => $split['paid'],
                 'days_without_pay' => $split['unpaid'],
-                'details' => $attributes['details'] ?? null,
+                'details' => $this->details($attributes['details'] ?? null),
                 'commutation' => $attributes['commutation'] ?? 'not_requested',
                 'status' => LeaveStatus::Pending,
                 'filed_at' => now(),
@@ -97,6 +109,37 @@ class LeaveFiler
 
             return $application->fresh(['approvals', 'type']);
         });
+    }
+
+    /**
+     * Item 6.B of CS Form 6, and nothing else.
+     *
+     * The array arrives from the browser and is written to a column that ends
+     * up on a signed document, so it is filtered to the keys the form actually
+     * prints rather than stored as given.
+     *
+     * @param  array<string, mixed>|null  $details
+     * @return array<string, string>|null
+     */
+    private function details(?array $details): ?array
+    {
+        if ($details === null) {
+            return null;
+        }
+
+        $kept = [];
+
+        foreach (self::DETAIL_KEYS as $key) {
+            $value = trim((string) ($details[$key] ?? ''));
+
+            if ($value !== '') {
+                $kept[$key] = $value;
+            }
+        }
+
+        // An empty array and null both print nothing; null says so in the
+        // database too.
+        return $kept === [] ? null : $kept;
     }
 
     /** @return array{paid: float, unpaid: float} */

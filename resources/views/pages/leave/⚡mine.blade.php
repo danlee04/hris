@@ -240,7 +240,9 @@ new #[Title('My leave')] class extends Component {
                 {{ $refilingId ? __('Correct and send again') : __('Apply for leave') }}
             </flux:heading>
 
-            <flux:select wire:model="form.leave_type_id" :label="__('Type of leave')" :placeholder="__('Choose')">
+            {{-- Live, because item 6.B asks a different question of each type
+                 and the form has to change with the answer. --}}
+            <flux:select wire:model.live="form.leave_type_id" :label="__('Type of leave')" :placeholder="__('Choose')">
                 @foreach ($types as $type)
                     <flux:select.option wire:key="type-{{ $type->id }}" value="{{ $type->id }}">
                         {{ $type->name }}
@@ -259,6 +261,44 @@ new #[Title('My leave')] class extends Component {
                     :description="__('Half days allowed.')"
                 />
             </div>
+
+            @php
+                $chosen = $types->firstWhere('id', (int) ($form['leave_type_id'] ?? 0));
+            @endphp
+
+            {{-- Item 6.B of CS Form 6. Only the question this type asks: a sick
+                 leave has nothing to say about a destination, and a form
+                 offering every question at once is a form nobody reads. --}}
+            @if (in_array($chosen?->code, ['VL', 'SPL'], true))
+                <div class="grid gap-6 sm:grid-cols-2">
+                    <flux:select wire:model="form.details.vacation_where" :label="__('Where')" :placeholder="__('Choose')">
+                        <flux:select.option value="within_philippines">{{ __('Within the Philippines') }}</flux:select.option>
+                        <flux:select.option value="abroad">{{ __('Abroad') }}</flux:select.option>
+                    </flux:select>
+
+                    <flux:input wire:model="form.details.vacation_detail" :label="__('Specify')" />
+                </div>
+            @elseif ($chosen?->code === 'SL')
+                <div class="grid gap-6 sm:grid-cols-2">
+                    <flux:select wire:model="form.details.sick_where" :label="__('Where')" :placeholder="__('Choose')">
+                        <flux:select.option value="in_hospital">{{ __('In hospital') }}</flux:select.option>
+                        <flux:select.option value="out_patient">{{ __('Out patient') }}</flux:select.option>
+                    </flux:select>
+
+                    <flux:input wire:model="form.details.sick_detail" :label="__('Illness')" />
+                </div>
+            @elseif ($chosen?->code === 'STUDY')
+                <div class="grid gap-6 sm:grid-cols-2">
+                    <flux:select wire:model="form.details.study_purpose" :label="__('Purpose')" :placeholder="__('Choose')">
+                        <flux:select.option value="masters">{{ __("Completion of master's degree") }}</flux:select.option>
+                        <flux:select.option value="board_review">{{ __('BAR / board examination review') }}</flux:select.option>
+                    </flux:select>
+
+                    <flux:input wire:model="form.details.study_detail" :label="__('Other purpose')" />
+                </div>
+            @elseif ($chosen?->code === 'SLBW')
+                <flux:input wire:model="form.details.women_detail" :label="__('Illness')" />
+            @endif
 
             <flux:select wire:model="form.commutation" :label="__('Commutation')">
                 <flux:select.option value="not_requested">{{ __('Not requested') }}</flux:select.option>
