@@ -225,11 +225,26 @@ new class extends Component {
         }
     }
 
+    /**
+     * The person already holding a post, if it is somebody other than the one
+     * being edited. Null means the switch is theirs to set or to clear.
+     */
+    private function heldBy(string $column): ?Employee
+    {
+        return Employee::where($column, true)
+            ->when($this->employeeId, fn ($query) => $query->whereKeyNot($this->employeeId))
+            ->first();
+    }
+
     /** @return array<string, mixed> */
     public function with(): array
     {
         return [
             'employee' => $this->employeeId ? Employee::findOrFail($this->employeeId) : null,
+            // Who already holds each post, excluding the person being edited —
+            // so the holder keeps their own switch and can hand it over.
+            'chiefHeldBy' => $this->heldBy('is_chief_of_hospital'),
+            'hrOfficerHeldBy' => $this->heldBy('is_hr_officer'),
             'positions' => Position::orderBy('title')->get(),
             'divisions' => Division::orderBy('name')->get(),
             'sections' => $this->form['division_id']
@@ -315,24 +330,48 @@ new class extends Component {
                 :description="__('Turn this off when the person leaves. Their record and their PDS stay.')"
             />
 
-            <flux:switch
-                wire:model="form.is_chief_of_hospital"
-                :label="__('Chief of Hospital')"
-                :description="__('One person at a time. Approves every leave application.')"
-            />
+            {{--
+                One Chief, one HR officer. Once somebody holds the post the
+                switch is gone: offering it to a second person is offering
+                something that will be refused.
 
-            <flux:error name="form.is_chief_of_hospital" />
+                The holder keeps their own switch, which is what makes a
+                handover possible — hiding it from everybody would make the
+                post permanent. And a control that vanishes without saying why
+                is worse than one that refuses, so the holder is named in its
+                place.
 
-            {{-- Not a role. The HR account can be shared, a stand-in, an
-                 administrator covering a vacancy; the name printed on CS Form 6
-                 must not change because of any of that. --}}
-            <flux:switch
-                wire:model="form.is_hr_officer"
-                :label="__('Human Resource Development Officer')"
-                :description="__('One person at a time. Their name signs item 7.A of CS Form 6, whoever in HR does the work.')"
-            />
+                Not a role, either of them. The HR account can be shared, a
+                stand-in, an administrator covering a vacancy; the name printed
+                on CS Form 6 must not change because of any of that.
+            --}}
+            @if ($chiefHeldBy)
+                <flux:text class="text-sm">
+                    {{ __('Chief of Hospital: :name', ['name' => $chiefHeldBy->fullName()]) }}
+                </flux:text>
+            @else
+                <flux:switch
+                    wire:model="form.is_chief_of_hospital"
+                    :label="__('Chief of Hospital')"
+                    :description="__('One person at a time. Approves every leave application.')"
+                />
 
-            <flux:error name="form.is_hr_officer" />
+                <flux:error name="form.is_chief_of_hospital" />
+            @endif
+
+            @if ($hrOfficerHeldBy)
+                <flux:text class="text-sm">
+                    {{ __('Human Resource Development Officer: :name', ['name' => $hrOfficerHeldBy->fullName()]) }}
+                </flux:text>
+            @else
+                <flux:switch
+                    wire:model="form.is_hr_officer"
+                    :label="__('Human Resource Development Officer')"
+                    :description="__('One person at a time. Their name signs item 7.A of CS Form 6, whoever in HR does the work.')"
+                />
+
+                <flux:error name="form.is_hr_officer" />
+            @endif
         </div>
 
         <div @class(['flex items-center gap-4', 'justify-end' => $inModal])>

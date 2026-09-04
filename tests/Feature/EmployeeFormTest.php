@@ -288,6 +288,43 @@ class EmployeeFormTest extends TestCase
         $this->assertFalse($this->employee->fresh()->is_chief_of_hospital);
     }
 
+    public function test_the_switches_disappear_once_somebody_else_holds_the_post(): void
+    {
+        // One Chief, one HR officer. Offering the switch to a second person is
+        // offering something that will be refused.
+        Employee::factory()->create(['is_chief_of_hospital' => true, 'last_name' => 'Miro']);
+        Employee::factory()->create(['is_hr_officer' => true, 'last_name' => 'Lao Guico']);
+
+        $this->actingAs($this->userWithRole('hr'))
+            ->get(route('employees.create'))
+            ->assertOk()
+            ->assertDontSee('form.is_chief_of_hospital')
+            ->assertDontSee('form.is_hr_officer')
+            // Not silently: a control that vanishes with no explanation is
+            // worse than one that refuses.
+            ->assertSee('Miro')
+            ->assertSee('Lao Guico');
+    }
+
+    public function test_the_holder_keeps_their_own_switch_so_the_post_can_be_handed_over(): void
+    {
+        // Hiding it from everyone would make the post permanent.
+        $this->employee->update(['is_chief_of_hospital' => true]);
+
+        Livewire::actingAs($this->userWithRole('hr'))
+            ->test('pages::employees.form', ['employee' => $this->employee])
+            ->assertSee('form.is_chief_of_hospital');
+    }
+
+    public function test_the_switches_are_offered_while_the_posts_are_empty(): void
+    {
+        $this->actingAs($this->userWithRole('hr'))
+            ->get(route('employees.create'))
+            ->assertOk()
+            ->assertSee('form.is_chief_of_hospital')
+            ->assertSee('form.is_hr_officer');
+    }
+
     public function test_a_second_hr_officer_is_refused_by_name(): void
     {
         // One name signs item 7.A of CS Form 6. Two would mean the form saying
