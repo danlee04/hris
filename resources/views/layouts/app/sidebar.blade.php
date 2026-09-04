@@ -26,6 +26,14 @@
                         </flux:sidebar.item>
                     @endif
 
+                    {{-- Anybody can hold a step: a section head is an ordinary
+                         employee with a section behind them. --}}
+                    @if (auth()->user()?->employee || auth()->user()?->can('leave.manage'))
+                        <flux:sidebar.item icon="inbox" :href="route('leave.approvals')" :current="request()->routeIs('leave.approvals')" wire:navigate>
+                            {{ __('Approvals') }}
+                        </flux:sidebar.item>
+                    @endif
+
                     @can('viewAny', App\Models\Employee::class)
                         <flux:sidebar.item icon="users" :href="route('employees.index')" :current="request()->routeIs('employees.index')" wire:navigate>
                             {{ __('Employees') }}
