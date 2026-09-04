@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Leave;
 
+use App\Enums\EmploymentStatus;
 use App\Enums\LeaveStatus;
 use App\Models\Division;
 use App\Models\Employee;
@@ -9,6 +10,7 @@ use App\Models\LeaveApplication;
 use App\Models\LeaveType;
 use App\Models\Section;
 use App\Models\User;
+use App\Services\Leave\AccrualPosting;
 use App\Services\Leave\LeaveLedger;
 use Database\Seeders\LeaveTypeSeeder;
 use Database\Seeders\RoleSeeder;
@@ -194,6 +196,49 @@ class MyLeaveScreenTest extends TestCase
             ->set('form.details.vacation_detail', 'Singapore')
             ->call('startApplying')
             ->assertSet('form.details', []);
+    }
+
+    public function test_a_contract_of_service_employee_files_wellness_leave(): void
+    {
+        // The only type they are offered, with its own rules: five days'
+        // notice, three consecutive days at most.
+        $this->applicant->update(['employment_status' => EmploymentStatus::ContractOfService->value]);
+
+        app(AccrualPosting::class)->postGrants(now()->format('Y'));
+
+        Livewire::actingAs($this->user)
+            ->test('pages::leave.mine')
+            ->call('startApplying')
+            ->set('form.leave_type_id', LeaveType::where('code', 'WELLNESS')->sole()->id)
+            ->set('form.date_from', now()->addDays(7)->toDateString())
+            ->set('form.date_to', now()->addDays(8)->toDateString())
+            ->set('form.days', 2)
+            ->call('file')
+            ->assertHasNoErrors();
+
+        $this->assertDatabaseHas('leave_applications', ['days_with_pay' => 2]);
+    }
+
+    public function test_the_only_type_on_offer_is_already_chosen(): void
+    {
+        // A dropdown holding one option and a placeholder looks answered and is
+        // not. Contract of service staff have exactly one type, and every one
+        // of them would meet "Choose the type of leave" on their first try.
+        $this->applicant->update(['employment_status' => EmploymentStatus::ContractOfService->value]);
+
+        Livewire::actingAs($this->user)
+            ->test('pages::leave.mine')
+            ->call('startApplying')
+            ->assertSet('form.leave_type_id', LeaveType::where('code', 'WELLNESS')->sole()->id);
+    }
+
+    public function test_more_than_one_type_is_left_for_the_person_to_choose(): void
+    {
+        // Thirteen types and a guess is worse than a placeholder.
+        Livewire::actingAs($this->user)
+            ->test('pages::leave.mine')
+            ->call('startApplying')
+            ->assertSet('form.leave_type_id', null);
     }
 
     public function test_filing_without_choosing_a_type_says_so(): void

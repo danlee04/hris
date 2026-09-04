@@ -119,10 +119,27 @@ new #[Title('My leave')] class extends Component {
         return auth()->user()?->employee;
     }
 
+    /** @return \Illuminate\Support\Collection<int, LeaveType> */
+    private function availableTypes()
+    {
+        $applicant = $this->applicant();
+
+        return $applicant?->employment_status
+            ? LeaveType::availableTo($applicant->employment_status)->get()
+            : collect();
+    }
+
     private function emptyForm(): void
     {
+        $types = $this->availableTypes();
+
         $this->form = [
-            'leave_type_id' => null,
+            // A dropdown holding one option and a placeholder looks answered
+            // and is not. Contract of service and job order staff are offered
+            // exactly one type, so every one of them would meet "Choose the
+            // type of leave" on their first try. With thirteen on offer, a
+            // guess would be worse than the placeholder.
+            'leave_type_id' => $types->count() === 1 ? $types->first()->id : null,
             'date_from' => null,
             'date_to' => null,
             'days' => null,
@@ -138,9 +155,8 @@ new #[Title('My leave')] class extends Component {
 
         return [
             'balances' => $applicant ? app(LeaveBalance::class)->for($applicant) : [],
-            'types' => $applicant?->employment_status
-                ? LeaveType::availableTo($applicant->employment_status)->get()
-                : collect(),
+            // The same list the form preselects from, so the two cannot differ.
+            'types' => $this->availableTypes(),
             'applications' => LeaveApplication::query()
                 ->where('employee_id', $applicant?->id)
                 ->with(['type', 'approvals.approver'])
