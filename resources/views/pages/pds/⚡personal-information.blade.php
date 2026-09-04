@@ -102,77 +102,102 @@ new #[Title('Personal information')] class extends Component {
         {{ __('CS Form 212 (Revised 2026), items 1 to 21.') }}
     </x-pds.page-header>
 
-    <form wire:submit="save" class="mt-6 max-w-3xl space-y-8">
-        <div class="grid gap-6 sm:grid-cols-2">
-            <flux:input wire:model="form.date_of_birth" type="date" :label="__('Date of birth')" />
-            <flux:input wire:model="form.place_of_birth" :label="__('Place of birth')" />
+    {{--
+        Two columns from `lg` up. Twenty-one items in one narrow column meant
+        most of a wide screen was blank and the form ran several screens deep.
+        The columns are written out rather than left to the browser to flow,
+        because the two addresses have to be able to sit side by side: that is
+        the pair a person actually compares while typing.
+    --}}
+    <form wire:submit="save" class="mt-6 max-w-6xl space-y-8">
+        <div class="grid items-start gap-8 lg:grid-cols-2">
+            <div class="space-y-8">
+                <flux:card class="space-y-6">
+                    <flux:heading size="lg">{{ __('Personal details') }}</flux:heading>
 
-            <flux:select wire:model="form.sex" :label="__('Sex at birth')" :placeholder="__('Choose')">
-                @foreach (App\Enums\Sex::cases() as $case)
-                    <flux:select.option value="{{ $case->value }}">{{ $case->label() }}</flux:select.option>
-                @endforeach
-            </flux:select>
+                    <div class="grid gap-6 sm:grid-cols-2">
+                        <flux:input wire:model="form.date_of_birth" type="date" :label="__('Date of birth')" />
+                        <flux:input wire:model="form.place_of_birth" :label="__('Place of birth')" />
 
-            <flux:select wire:model="form.civil_status" :label="__('Civil status')" :placeholder="__('Choose')">
-                @foreach (App\Enums\CivilStatus::cases() as $case)
-                    <flux:select.option value="{{ $case->value }}">{{ $case->label() }}</flux:select.option>
-                @endforeach
-            </flux:select>
+                        <flux:select wire:model="form.sex" :label="__('Sex at birth')" :placeholder="__('Choose')">
+                            @foreach (App\Enums\Sex::cases() as $case)
+                                <flux:select.option value="{{ $case->value }}">{{ $case->label() }}</flux:select.option>
+                            @endforeach
+                        </flux:select>
 
-            <flux:input wire:model="form.height_m" type="number" step="0.01" :label="__('Height (m)')" />
-            <flux:input wire:model="form.weight_kg" type="number" step="0.01" :label="__('Weight (kg)')" />
-            <flux:input wire:model="form.blood_type" :label="__('Blood type')" />
-            <flux:input wire:model="form.citizenship" :label="__('Citizenship')" />
-        </div>
+                        <flux:select wire:model="form.civil_status" :label="__('Civil status')" :placeholder="__('Choose')">
+                            @foreach (App\Enums\CivilStatus::cases() as $case)
+                                <flux:select.option value="{{ $case->value }}">{{ $case->label() }}</flux:select.option>
+                            @endforeach
+                        </flux:select>
 
-        <flux:separator :text="__('Identification numbers')" />
+                        <flux:input wire:model="form.height_m" type="number" step="0.01" :label="__('Height (m)')" />
+                        <flux:input wire:model="form.weight_kg" type="number" step="0.01" :label="__('Weight (kg)')" />
+                        <flux:input wire:model="form.blood_type" :label="__('Blood type')" />
+                        <flux:input wire:model="form.citizenship" :label="__('Citizenship')" />
+                    </div>
+                </flux:card>
 
-        <div class="grid gap-6 sm:grid-cols-2">
-            <flux:input wire:model="form.umid_id" :label="__('UMID ID no.')" />
-            <flux:input wire:model="form.pagibig_id" :label="__('PAG-IBIG ID no.')" />
-            <flux:input wire:model="form.philhealth_no" :label="__('PhilHealth no.')" />
-            <flux:input wire:model="form.tin_no" :label="__('TIN no.')" />
-            <flux:input wire:model="form.agency_employee_no" :label="__('Agency employee no.')" />
-            <flux:input wire:model="form.philsys_id" :label="__('PhilSys Card Number (PCN)')" />
-        </div>
+                <flux:card class="space-y-6">
+                    <flux:heading size="lg">{{ __('Identification numbers') }}</flux:heading>
 
-        <flux:separator :text="__('Residential address')" />
+                    <div class="grid gap-6 sm:grid-cols-2">
+                        <flux:input wire:model="form.umid_id" :label="__('UMID ID no.')" />
+                        <flux:input wire:model="form.pagibig_id" :label="__('PAG-IBIG ID no.')" />
+                        <flux:input wire:model="form.philhealth_no" :label="__('PhilHealth no.')" />
+                        <flux:input wire:model="form.tin_no" :label="__('TIN no.')" />
+                        <flux:input wire:model="form.agency_employee_no" :label="__('Agency employee no.')" />
+                        <flux:input wire:model="form.philsys_id" :label="__('PhilSys Card Number (PCN)')" />
+                    </div>
+                </flux:card>
 
-        <div class="grid gap-6 sm:grid-cols-2">
-            <flux:input wire:model="form.res_house_no" :label="__('House/Block/Lot no.')" />
-            <flux:input wire:model="form.res_street" :label="__('Street')" />
-            <flux:input wire:model="form.res_subdivision" :label="__('Subdivision/Village')" />
-            <flux:input wire:model="form.res_barangay" :label="__('Barangay')" />
-            <flux:input wire:model="form.res_city" :label="__('City/Municipality')" />
-            <flux:input wire:model="form.res_province" :label="__('Province')" />
-            <flux:input wire:model="form.res_zip_code" :label="__('ZIP code')" />
-        </div>
+                <flux:card class="space-y-6">
+                    <flux:heading size="lg">{{ __('Contact details') }}</flux:heading>
 
-        <flux:separator :text="__('Permanent address')" />
-
-        <flux:checkbox
-            wire:model.live="form.permanent_same_as_residential"
-            :label="__('Same as residential address')"
-        />
-
-        @unless ($form['permanent_same_as_residential'] ?? false)
-            <div class="grid gap-6 sm:grid-cols-2">
-                <flux:input wire:model="form.perm_house_no" :label="__('House/Block/Lot no.')" />
-                <flux:input wire:model="form.perm_street" :label="__('Street')" />
-                <flux:input wire:model="form.perm_subdivision" :label="__('Subdivision/Village')" />
-                <flux:input wire:model="form.perm_barangay" :label="__('Barangay')" />
-                <flux:input wire:model="form.perm_city" :label="__('City/Municipality')" />
-                <flux:input wire:model="form.perm_province" :label="__('Province')" />
-                <flux:input wire:model="form.perm_zip_code" :label="__('ZIP code')" />
+                    <div class="grid gap-6 sm:grid-cols-2">
+                        <flux:input wire:model="form.telephone_no" :label="__('Telephone no.')" />
+                        <flux:input wire:model="form.mobile_no" :label="__('Mobile no.')" />
+                        <flux:input wire:model="form.email_address" type="email" :label="__('Email address')" />
+                    </div>
+                </flux:card>
             </div>
-        @endunless
 
-        <flux:separator :text="__('Contact details')" />
+            <div class="space-y-8">
+                <flux:card class="space-y-6">
+                    <flux:heading size="lg">{{ __('Residential address') }}</flux:heading>
 
-        <div class="grid gap-6 sm:grid-cols-2">
-            <flux:input wire:model="form.telephone_no" :label="__('Telephone no.')" />
-            <flux:input wire:model="form.mobile_no" :label="__('Mobile no.')" />
-            <flux:input wire:model="form.email_address" type="email" :label="__('Email address')" />
+                    <div class="grid gap-6 sm:grid-cols-2">
+                        <flux:input wire:model="form.res_house_no" :label="__('House/Block/Lot no.')" />
+                        <flux:input wire:model="form.res_street" :label="__('Street')" />
+                        <flux:input wire:model="form.res_subdivision" :label="__('Subdivision/Village')" />
+                        <flux:input wire:model="form.res_barangay" :label="__('Barangay')" />
+                        <flux:input wire:model="form.res_city" :label="__('City/Municipality')" />
+                        <flux:input wire:model="form.res_province" :label="__('Province')" />
+                        <flux:input wire:model="form.res_zip_code" :label="__('ZIP code')" />
+                    </div>
+                </flux:card>
+
+                <flux:card class="space-y-6">
+                    <flux:heading size="lg">{{ __('Permanent address') }}</flux:heading>
+
+                    <flux:checkbox
+                        wire:model.live="form.permanent_same_as_residential"
+                        :label="__('Same as residential address')"
+                    />
+
+                    @unless ($form['permanent_same_as_residential'] ?? false)
+                        <div class="grid gap-6 sm:grid-cols-2">
+                            <flux:input wire:model="form.perm_house_no" :label="__('House/Block/Lot no.')" />
+                            <flux:input wire:model="form.perm_street" :label="__('Street')" />
+                            <flux:input wire:model="form.perm_subdivision" :label="__('Subdivision/Village')" />
+                            <flux:input wire:model="form.perm_barangay" :label="__('Barangay')" />
+                            <flux:input wire:model="form.perm_city" :label="__('City/Municipality')" />
+                            <flux:input wire:model="form.perm_province" :label="__('Province')" />
+                            <flux:input wire:model="form.perm_zip_code" :label="__('ZIP code')" />
+                        </div>
+                    @endunless
+                </flux:card>
+            </div>
         </div>
 
         <flux:button type="submit" variant="primary">{{ __('Save') }}</flux:button>

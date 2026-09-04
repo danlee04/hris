@@ -77,67 +77,74 @@ new #[Title('Family background')] class extends Component {
         {{ __('CS Form 212 (Revised 2026), items 22 to 25.') }}
     </x-pds.page-header>
 
-    <form wire:submit="save" class="mt-6 max-w-3xl space-y-8">
-        <div class="space-y-4">
-            <flux:heading size="lg">{{ __('Spouse') }}</flux:heading>
+    {{--
+        Spouse on one side, parents on the other. Children stay full width
+        below both: each row is a name, a date and a delete button on one line,
+        and half a screen is not enough for that without wrapping.
+    --}}
+    <form wire:submit="save" class="mt-6 max-w-6xl space-y-8">
+        <div class="grid items-start gap-8 lg:grid-cols-2">
+            <flux:card class="space-y-6">
+                <flux:heading size="lg">{{ __('Spouse') }}</flux:heading>
 
-            <div class="grid gap-6 sm:grid-cols-2">
-                <flux:input wire:model="form.spouse_surname" :label="__('Surname')" />
-                <flux:input wire:model="form.spouse_first_name" :label="__('First name')" />
-                <flux:input wire:model="form.spouse_middle_name" :label="__('Middle name')" />
-                <flux:input wire:model="form.spouse_name_extension" :label="__('Name extension (Jr., Sr.)')" />
-                <flux:input wire:model="form.spouse_occupation" :label="__('Occupation')" />
-                <flux:input wire:model="form.spouse_employer" :label="__('Employer / business name')" />
-                <flux:input wire:model="form.spouse_business_address" :label="__('Business address')" />
-                <flux:input wire:model="form.spouse_telephone_no" :label="__('Telephone no.')" />
-            </div>
-        </div>
-
-        <flux:separator />
-
-        <x-pds.repeater :heading="__('Children')" :add-label="__('Add a child')">
-            @foreach ($rows as $index => $row)
-                {{-- wire:key is bound to the row's own key, never to $index. --}}
-                <div wire:key="{{ $row['key'] }}" class="flex items-end gap-3">
-                    <flux:input class="flex-1" wire:model="rows.{{ $index }}.name" :label="__('Name')" />
-                    <flux:input
-                        wire:model="rows.{{ $index }}.date_of_birth"
-                        type="date"
-                        :label="__('Date of birth')"
-                    />
-                    <flux:button
-                        type="button"
-                        wire:click="removeRow({{ $index }})"
-                        variant="subtle"
-                        icon="trash"
-                        :aria-label="__('Remove this child')"
-                    />
+                <div class="grid gap-6 sm:grid-cols-2">
+                    <flux:input wire:model="form.spouse_surname" :label="__('Surname')" />
+                    <flux:input wire:model="form.spouse_first_name" :label="__('First name')" />
+                    <flux:input wire:model="form.spouse_middle_name" :label="__('Middle name')" />
+                    <flux:input wire:model="form.spouse_name_extension" :label="__('Name extension (Jr., Sr.)')" />
+                    <flux:input wire:model="form.spouse_occupation" :label="__('Occupation')" />
+                    <flux:input wire:model="form.spouse_employer" :label="__('Employer / business name')" />
+                    <flux:input wire:model="form.spouse_business_address" :label="__('Business address')" />
+                    <flux:input wire:model="form.spouse_telephone_no" :label="__('Telephone no.')" />
                 </div>
-            @endforeach
-        </x-pds.repeater>
+            </flux:card>
 
-        <flux:separator />
+            <div class="space-y-8">
+                <flux:card class="space-y-6">
+                    <flux:heading size="lg">{{ __("Father's name") }}</flux:heading>
 
-        <div class="space-y-4">
-            <flux:heading size="lg">{{ __("Father's name") }}</flux:heading>
+                    <div class="grid gap-6 sm:grid-cols-2">
+                        <flux:input wire:model="form.father_surname" :label="__('Surname')" />
+                        <flux:input wire:model="form.father_first_name" :label="__('First name')" />
+                        <flux:input wire:model="form.father_middle_name" :label="__('Middle name')" />
+                        <flux:input wire:model="form.father_name_extension" :label="__('Name extension')" />
+                    </div>
+                </flux:card>
 
-            <div class="grid gap-6 sm:grid-cols-2">
-                <flux:input wire:model="form.father_surname" :label="__('Surname')" />
-                <flux:input wire:model="form.father_first_name" :label="__('First name')" />
-                <flux:input wire:model="form.father_middle_name" :label="__('Middle name')" />
-                <flux:input wire:model="form.father_name_extension" :label="__('Name extension')" />
+                <flux:card class="space-y-6">
+                    <flux:heading size="lg">{{ __("Mother's maiden name") }}</flux:heading>
+
+                    <div class="grid gap-6 sm:grid-cols-2">
+                        <flux:input wire:model="form.mother_surname" :label="__('Surname')" />
+                        <flux:input wire:model="form.mother_first_name" :label="__('First name')" />
+                        <flux:input wire:model="form.mother_middle_name" :label="__('Middle name')" />
+                    </div>
+                </flux:card>
             </div>
         </div>
 
-        <div class="space-y-4">
-            <flux:heading size="lg">{{ __("Mother's maiden name") }}</flux:heading>
-
-            <div class="grid gap-6 sm:grid-cols-2">
-                <flux:input wire:model="form.mother_surname" :label="__('Surname')" />
-                <flux:input wire:model="form.mother_first_name" :label="__('First name')" />
-                <flux:input wire:model="form.mother_middle_name" :label="__('Middle name')" />
-            </div>
-        </div>
+        <flux:card>
+            <x-pds.repeater :heading="__('Children')" :add-label="__('Add a child')">
+                @foreach ($rows as $index => $row)
+                    {{-- wire:key is bound to the row's own key, never to $index. --}}
+                    <div wire:key="{{ $row['key'] }}" class="flex items-end gap-3">
+                        <flux:input class="flex-1" wire:model="rows.{{ $index }}.name" :label="__('Name')" />
+                        <flux:input
+                            wire:model="rows.{{ $index }}.date_of_birth"
+                            type="date"
+                            :label="__('Date of birth')"
+                        />
+                        <flux:button
+                            type="button"
+                            wire:click="removeRow({{ $index }})"
+                            variant="subtle"
+                            icon="trash"
+                            :aria-label="__('Remove this child')"
+                        />
+                    </div>
+                @endforeach
+            </x-pds.repeater>
+        </flux:card>
 
         <flux:button type="submit" variant="primary">{{ __('Save') }}</flux:button>
     </form>
