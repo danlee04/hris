@@ -196,6 +196,14 @@ class Form6Exporter
                     $approval->approver?->fullName() ?? '');
             }
 
+            // The Chief is who approves it, and a form that does not say who
+            // approved it is a form the next office sends back. There is no
+            // cell for the name: it replaces the ruled line inside the caption,
+            // keeping the space above it to sign in.
+            if ($approval->step === LeaveStep::Chief && $approval->action === ApprovalAction::Approve) {
+                $this->caption($sheet, 'chief', $approval->approver?->fullName() ?? '');
+            }
+
             if ($approval->action === ApprovalAction::Disapprove) {
                 $this->put($sheet, $this->map->cell('disapproval_reason'), (string) $approval->remarks);
                 $this->put($sheet, $this->map->cell('disapproved_due_to'), (string) $approval->remarks);

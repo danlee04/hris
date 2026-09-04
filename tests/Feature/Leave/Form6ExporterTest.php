@@ -259,9 +259,43 @@ class Form6ExporterTest extends TestCase
         $this->assertStringContainsString('Needed on duty', (string) $sheet->getCell('I60')->getValue());
     }
 
-    public function test_the_signature_lines_are_left_blank(): void
+    public function test_the_chief_who_approved_is_named_on_the_signature_line(): void
     {
-        // The form is printed and signed by hand.
+        // The Chief is who approves it. A form that does not say who approved
+        // it is a form the next office sends back.
+        $chief = Employee::where('is_chief_of_hospital', true)->sole();
+        $chief->update(['last_name' => 'Bautista', 'first_name' => 'Jose']);
+
+        $application = $this->file();
+
+        $this->actingAs(User::factory()->create());
+
+        while ($approval = $application->fresh()->currentApproval()) {
+            $application = app(LeaveDecision::class)->act(
+                $application->fresh(), $approval, ApprovalAction::Approve, null
+            );
+        }
+
+        $sheet = $this->sheet($application);
+
+        $this->assertStringContainsString('Bautista', (string) $sheet->getCell('A69')->getValue());
+        // The title under the line stays: it is what the signature means.
+        $this->assertStringContainsString('Chief of Hospital', (string) $sheet->getCell('A69')->getValue());
+    }
+
+    public function test_an_unapproved_form_leaves_the_chiefs_line_empty(): void
+    {
+        // Printing a name beside an unsigned line says somebody approved it.
+        $sheet = $this->sheet($this->file());
+
+        $this->assertStringNotContainsString('Bautista', (string) $sheet->getCell('A69')->getValue());
+        $this->assertStringContainsString('_____', (string) $sheet->getCell('A69')->getValue());
+    }
+
+    public function test_the_applicants_signature_line_is_left_blank(): void
+    {
+        // Nobody signs for the applicant, and the system did not watch them
+        // sign. That line is theirs to fill with a pen.
         $sheet = $this->sheet($this->file());
 
         $this->assertStringNotContainsString('Guico', (string) $sheet->getCell('G52')->getValue());

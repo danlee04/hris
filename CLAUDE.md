@@ -183,6 +183,13 @@ not one.
 **Several CS Form 6 captions are RichText**, not strings: `A10`, `E10`, `A69`.
 Writing a plain string to them replaces the underlined blanks with flat text.
 
+**The forms export as `.xlsx`, not PDF, and that is a decision.** PhpSpreadsheet's
+PDF writers render cell values and styles only; the 25 checkboxes are form
+controls, not cells, and every tick would vanish — the type of leave would print
+blank on a signed document. A correct PDF needs LibreOffice on the server
+(`soffice --headless --convert-to pdf`), which the LAN box does not have. Revisit
+that when it does, not before.
+
 ## The CSV import
 
 **The import screen was removed**, along with its Livewire page, route, sidebar

@@ -76,6 +76,11 @@ return [
         'vacation_within' => ['cell' => 'I17', 'format' => 'Within the Philippines  :value'],
         'vacation_abroad' => ['cell' => 'I19', 'format' => 'Abroad (Specify)  :value'],
         'study_other' => ['cell' => 'I41', 'format' => 'Other purpose:  :value'],
+
+        // 7.C. The Chief's name replaces the ruled line and keeps the space
+        // above it to sign in, and the title below it. Written only once the
+        // Chief has actually approved.
+        'chief' => ['cell' => 'A69', 'format' => "\n\n\n:value\nChief of Hospital III"],
     ],
 
     'ticks' => [
