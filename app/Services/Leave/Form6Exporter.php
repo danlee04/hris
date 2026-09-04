@@ -196,12 +196,12 @@ class Form6Exporter
                 $officer = Employee::where('is_hr_officer', true)->first();
 
                 $this->put($sheet, $this->map->cell('hr_name'),
-                    $officer?->fullName() ?? $approval->actedBy?->name ?? '');
+                    $officer?->signatureName() ?? $approval->actedBy?->name ?? '');
             }
 
             if ($approval->step === LeaveStep::DivisionHead) {
                 $this->put($sheet, $this->map->cell('division_head_name'),
-                    $approval->approver?->fullName() ?? '');
+                    $approval->approver?->signatureName() ?? '');
             }
 
             // The Chief is who approves it, and a form that does not say who
@@ -209,7 +209,7 @@ class Form6Exporter
             // cell for the name: it replaces the ruled line inside the caption,
             // keeping the space above it to sign in.
             if ($approval->step === LeaveStep::Chief && $approval->action === ApprovalAction::Approve) {
-                $this->caption($sheet, 'chief', $approval->approver?->fullName() ?? '');
+                $this->caption($sheet, 'chief', $approval->approver?->signatureName() ?? '');
             }
 
             if ($approval->action === ApprovalAction::Disapprove) {

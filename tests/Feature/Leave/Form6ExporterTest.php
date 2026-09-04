@@ -42,6 +42,8 @@ class Form6ExporterTest extends TestCase
         $this->divisionHead = Employee::factory()->create([
             'last_name' => 'Delos Santos',
             'first_name' => 'Maria',
+            'middle_name' => 'Hernandez',
+            'credentials' => 'MM-PA',
         ]);
 
         $division->update(['division_head_employee_id' => $this->divisionHead->id]);
@@ -219,6 +221,7 @@ class Form6ExporterTest extends TestCase
             'is_hr_officer' => true,
             'last_name' => 'Lao Guico',
             'first_name' => 'Mary Jane',
+            'middle_name' => 'Estrada',
         ]);
 
         $application = $this->file();
@@ -233,7 +236,7 @@ class Form6ExporterTest extends TestCase
 
         $sheet = $this->sheet($application);
 
-        $this->assertStringContainsString('Lao Guico', (string) $sheet->getCell('C63')->getValue());
+        $this->assertStringContainsString('MARY JANE E. LAO GUICO', (string) $sheet->getCell('C63')->getValue());
         $this->assertStringNotContainsString('Human Resource', (string) $sheet->getCell('C63')->getValue());
         $this->assertSame($officer->id, $officer->fresh()->id);
     }
@@ -281,7 +284,7 @@ class Form6ExporterTest extends TestCase
 
         $this->assertSame(LeaveStatus::Approved, $application->status);
         $this->assertStringContainsString('Ruth Cuizon', (string) $sheet->getCell('C63')->getValue());
-        $this->assertStringContainsString('Delos Santos', (string) $sheet->getCell('I63')->getValue());
+        $this->assertStringContainsString('DELOS SANTOS', (string) $sheet->getCell('I63')->getValue());
         $this->assertTrue($sheet->getCell('T57')->getValue());
     }
 
@@ -309,7 +312,12 @@ class Form6ExporterTest extends TestCase
         // The Chief is who approves it. A form that does not say who approved
         // it is a form the next office sends back.
         $chief = Employee::where('is_chief_of_hospital', true)->sole();
-        $chief->update(['last_name' => 'Bautista', 'first_name' => 'Jose']);
+        $chief->update([
+            'last_name' => 'Bautista',
+            'first_name' => 'Jose',
+            'middle_name' => 'Buenaventura',
+            'credentials' => 'MD',
+        ]);
 
         $application = $this->file();
 
@@ -323,7 +331,7 @@ class Form6ExporterTest extends TestCase
 
         $sheet = $this->sheet($application);
 
-        $this->assertStringContainsString('Bautista', (string) $sheet->getCell('A69')->getValue());
+        $this->assertStringContainsString('JOSE B. BAUTISTA, MD', (string) $sheet->getCell('A69')->getValue());
         // The title under the line stays: it is what the signature means.
         $this->assertStringContainsString('Chief of Hospital', (string) $sheet->getCell('A69')->getValue());
     }
@@ -333,7 +341,7 @@ class Form6ExporterTest extends TestCase
         // Printing a name beside an unsigned line says somebody approved it.
         $sheet = $this->sheet($this->file());
 
-        $this->assertStringNotContainsString('Bautista', (string) $sheet->getCell('A69')->getValue());
+        $this->assertStringNotContainsString('BAUTISTA', (string) $sheet->getCell('A69')->getValue());
         $this->assertStringContainsString('_____', (string) $sheet->getCell('A69')->getValue());
     }
 

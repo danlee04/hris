@@ -88,6 +88,7 @@ new class extends Component {
             'middle_name' => $employee?->middle_name,
             'last_name' => $employee?->last_name,
             'suffix' => $employee?->suffix,
+            'credentials' => $employee?->credentials,
             'position_id' => $employee?->position_id,
             // The import filled the section without always filling the
             // division. Deriving it here means the form opens showing where
@@ -141,6 +142,7 @@ new class extends Component {
             'form.middle_name' => ['nullable', 'string', 'max:255'],
             'form.last_name' => ['required', 'string', 'max:255'],
             'form.suffix' => ['nullable', 'string', 'max:20'],
+            'form.credentials' => ['nullable', 'string', 'max:120'],
             'form.position_id' => ['nullable', Rule::exists('positions', 'id')],
             'form.division_id' => ['nullable', Rule::exists('divisions', 'id')],
             // Not checked against the chosen division. The section is the real
@@ -281,6 +283,17 @@ new class extends Component {
             <flux:input wire:model="form.middle_name" :label="__('Middle name')" />
             <flux:input wire:model="form.last_name" :label="__('Last name')" />
             <flux:input wire:model="form.suffix" :label="__('Name extension')" placeholder="Jr., III" />
+
+            {{-- Not the name extension. Jr. is part of a name and has its own
+                 box on both CSC forms; MD is what follows the name on a
+                 signature line. --}}
+            <flux:input
+                wire:model="form.credentials"
+                class="sm:col-span-2"
+                :label="__('Credentials')"
+                :description="__('Printed after the name on signed forms. Whatever the person puts on their own letterhead.')"
+                placeholder="MD, DPCAM, MM-PA"
+            />
         </div>
 
         <flux:separator variant="subtle" />

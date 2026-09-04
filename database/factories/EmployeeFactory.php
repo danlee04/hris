@@ -21,6 +21,7 @@ class EmployeeFactory extends Factory
             'middle_name' => $this->faker->lastName(),
             'last_name' => $this->faker->lastName(),
             'suffix' => null,
+            'credentials' => null,
             'position_id' => Position::factory(),
             'section_id' => Section::factory(),
             'division_id' => null,

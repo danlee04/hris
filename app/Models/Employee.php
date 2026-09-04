@@ -39,6 +39,7 @@ use Spatie\Activitylog\Support\LogOptions;
     'middle_name',
     'last_name',
     'suffix',
+    'credentials',
     'position_id',
     'section_id',
     'division_id',
@@ -189,6 +190,39 @@ class Employee extends Model
         }
 
         return $this->suffix ? "{$name} {$this->suffix}" : $name;
+    }
+
+    /**
+     * The way a name is printed above a signature line: given name first, in
+     * capitals, with the letters after it.
+     *
+     * MARY JANE E. LAO GUICO
+     * EDHEL S. MIRO, MD, DPCAM, MM-PA
+     *
+     * Not fullName(), which is surname-first for reading a list of 134 people.
+     * The two are different questions and a form that used the list order would
+     * read as a filing entry rather than as somebody's signature.
+     *
+     * The name is capitalised; the credentials are left as the person writes
+     * them, because PhD and RN and MM-PA do not agree on capitals.
+     */
+    public function signatureName(): string
+    {
+        $name = $this->first_name;
+
+        if ($this->middle_name) {
+            $name .= ' '.mb_substr($this->middle_name, 0, 1).'.';
+        }
+
+        $name .= " {$this->last_name}";
+
+        if ($this->suffix) {
+            $name .= " {$this->suffix}";
+        }
+
+        $name = mb_strtoupper(trim($name));
+
+        return $this->credentials ? "{$name}, {$this->credentials}" : $name;
     }
 
     public function scopeActive(Builder $query): void
