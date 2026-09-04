@@ -40,6 +40,12 @@
                         </flux:sidebar.item>
                     @endcan
 
+                    @can('leave.types.manage')
+                        <flux:sidebar.item icon="calendar-days" :href="route('leave.types')" :current="request()->routeIs('leave.types')" wire:navigate>
+                            {{ __('Leave types') }}
+                        </flux:sidebar.item>
+                    @endcan
+
                     @can('audit.view')
                         <flux:sidebar.item icon="clipboard-document-list" :href="route('audit.index')" :current="request()->routeIs('audit.*')" wire:navigate>
                             {{ __('Audit log') }}

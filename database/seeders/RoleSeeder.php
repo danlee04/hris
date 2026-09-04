@@ -26,6 +26,8 @@ class RoleSeeder extends Seeder
         'users.manage',
         'roles.manage',
         'audit.view',
+        'leave.manage',
+        'leave.types.manage',
     ];
 
     /** @var list<string> */
@@ -37,6 +39,9 @@ class RoleSeeder extends Seeder
         'pds.edit.any',
         'pds.export.any',
         'audit.view',
+        // Balances and applications, but not the vocabulary itself — the same
+        // split as org.manage.
+        'leave.manage',
     ];
 
     public function run(): void

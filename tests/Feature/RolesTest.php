@@ -46,4 +46,14 @@ class RolesTest extends TestCase
             );
         }
     }
+
+    public function test_hr_maintains_balances_but_not_the_leave_vocabulary(): void
+    {
+        // The same split as the org chart: HR maintains people and what they
+        // hold, the admin maintains the words the system is allowed to use.
+        $hr = Role::findByName('hr');
+
+        $this->assertTrue($hr->hasPermissionTo('leave.manage'));
+        $this->assertFalse($hr->hasPermissionTo('leave.types.manage'));
+    }
 }
