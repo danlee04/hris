@@ -288,6 +288,41 @@ class EmployeeFormTest extends TestCase
         $this->assertFalse($this->employee->fresh()->is_chief_of_hospital);
     }
 
+    public function test_a_second_hr_officer_is_refused_by_name(): void
+    {
+        // One name signs item 7.A of CS Form 6. Two would mean the form saying
+        // different things on different days for no visible reason.
+        $incumbent = Employee::factory()->create([
+            'is_hr_officer' => true,
+            'last_name' => 'Lao Guico',
+            'first_name' => 'Mary Jane',
+        ]);
+
+        Livewire::actingAs($this->userWithRole('hr'))
+            ->test('pages::employees.form', ['employee' => $this->employee])
+            ->set('form.is_hr_officer', true)
+            ->call('save')
+            ->assertHasErrors('form.is_hr_officer')
+            ->assertSee($incumbent->fullName());
+
+        $this->assertFalse($this->employee->fresh()->is_hr_officer);
+    }
+
+    public function test_the_hr_officer_and_the_chief_can_be_two_different_people(): void
+    {
+        // The two flags are separate questions; setting one must not trip the
+        // other's check.
+        Employee::factory()->create(['is_chief_of_hospital' => true]);
+
+        Livewire::actingAs($this->userWithRole('hr'))
+            ->test('pages::employees.form', ['employee' => $this->employee])
+            ->set('form.is_hr_officer', true)
+            ->call('save')
+            ->assertHasNoErrors();
+
+        $this->assertTrue($this->employee->fresh()->is_hr_officer);
+    }
+
     public function test_the_chief_may_save_their_own_record_again(): void
     {
         $this->employee->update(['is_chief_of_hospital' => true]);

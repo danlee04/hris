@@ -43,6 +43,7 @@ use Spatie\Activitylog\Support\LogOptions;
     'section_id',
     'division_id',
     'is_chief_of_hospital',
+    'is_hr_officer',
     'date_hired',
     'employment_status',
     'biometric_id',
@@ -76,6 +77,7 @@ class Employee extends Model
     {
         return [
             'is_chief_of_hospital' => 'boolean',
+            'is_hr_officer' => 'boolean',
             'is_active' => 'boolean',
             'date_hired' => 'date',
             'employment_status' => EmploymentStatus::class,

@@ -210,6 +210,51 @@ class Form6ExporterTest extends TestCase
         $this->assertStringNotContainsString('Singapore', (string) $sheet->getCell('I27')->getValue());
     }
 
+    public function test_the_recorded_hr_officer_is_named_not_the_account_that_acted(): void
+    {
+        // The HR account can be shared, a stand-in, an administrator covering a
+        // vacancy. The name printed under "Human Resource Development Officer"
+        // must not change because of any of that.
+        $officer = Employee::factory()->create([
+            'is_hr_officer' => true,
+            'last_name' => 'Lao Guico',
+            'first_name' => 'Mary Jane',
+        ]);
+
+        $application = $this->file();
+
+        $this->actingAs(User::factory()->create(['name' => 'Human Resource']));
+
+        while ($approval = $application->fresh()->currentApproval()) {
+            $application = app(LeaveDecision::class)->act(
+                $application->fresh(), $approval, ApprovalAction::Approve, null
+            );
+        }
+
+        $sheet = $this->sheet($application);
+
+        $this->assertStringContainsString('Lao Guico', (string) $sheet->getCell('C63')->getValue());
+        $this->assertStringNotContainsString('Human Resource', (string) $sheet->getCell('C63')->getValue());
+        $this->assertSame($officer->id, $officer->fresh()->id);
+    }
+
+    public function test_with_no_officer_recorded_the_account_that_acted_is_named(): void
+    {
+        // Something is better than a blank line above a title, and it is still
+        // the truth about who acted.
+        $application = $this->file();
+
+        $this->actingAs(User::factory()->create(['name' => 'Ruth Cuizon']));
+
+        while ($approval = $application->fresh()->currentApproval()) {
+            $application = app(LeaveDecision::class)->act(
+                $application->fresh(), $approval, ApprovalAction::Approve, null
+            );
+        }
+
+        $this->assertStringContainsString('Ruth Cuizon', (string) $this->sheet($application)->getCell('C63')->getValue());
+    }
+
     public function test_a_pending_application_names_nobody_and_ticks_no_recommendation(): void
     {
         // Nobody has signed. Printing a name would put words in their mouth.

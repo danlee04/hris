@@ -25,6 +25,7 @@ class EmployeeFactory extends Factory
             'section_id' => Section::factory(),
             'division_id' => null,
             'is_chief_of_hospital' => false,
+            'is_hr_officer' => false,
             'date_hired' => $this->faker->dateTimeBetween('-15 years'),
             'employment_status' => EmploymentStatus::Permanent->value,
             'biometric_id' => $this->faker->unique()->numerify('####'),

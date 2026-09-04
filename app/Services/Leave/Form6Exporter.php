@@ -5,6 +5,7 @@ namespace App\Services\Leave;
 use App\Enums\ApprovalAction;
 use App\Enums\LeaveStatus;
 use App\Enums\LeaveStep;
+use App\Models\Employee;
 use App\Models\LeaveApplication;
 use Illuminate\Support\Str;
 use PhpOffice\PhpSpreadsheet\Cell\DataType;
@@ -185,10 +186,17 @@ class Form6Exporter
                 continue;
             }
 
-            // HR is an office. The person who acted is the only thing that
-            // names anybody, so it is their account name that prints.
+            // The officer recorded on the employee master, not the account
+            // that clicked. The HR account can be shared, a stand-in, an
+            // administrator covering a vacancy; the name printed under "Human
+            // Resource Development Officer" must not change because of any of
+            // that. Who actually acted is in acted_by_user_id, and on the
+            // screen, where it belongs.
             if ($approval->step === LeaveStep::Hr) {
-                $this->put($sheet, $this->map->cell('hr_name'), $approval->actedBy?->name ?? '');
+                $officer = Employee::where('is_hr_officer', true)->first();
+
+                $this->put($sheet, $this->map->cell('hr_name'),
+                    $officer?->fullName() ?? $approval->actedBy?->name ?? '');
             }
 
             if ($approval->step === LeaveStep::DivisionHead) {

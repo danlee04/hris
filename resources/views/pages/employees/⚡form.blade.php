@@ -101,6 +101,7 @@ new class extends Component {
             'biometric_id' => $employee?->biometric_id,
             'is_active' => (bool) ($employee?->is_active ?? true),
             'is_chief_of_hospital' => (bool) $employee?->is_chief_of_hospital,
+            'is_hr_officer' => (bool) $employee?->is_hr_officer,
         ];
     }
 
@@ -155,20 +156,30 @@ new class extends Component {
             ],
             'form.is_active' => ['boolean'],
             'form.is_chief_of_hospital' => ['boolean'],
+            'form.is_hr_officer' => ['boolean'],
         ], [
             'form.biometric_id.unique' => __('Another employee already uses that biometric ID.'),
         ])['form'];
 
-        // The hospital has one Chief. Reassigning the other person silently
-        // would rewrite a record HR never opened; naming them lets HR decide.
-        if ($validated['is_chief_of_hospital']) {
-            $incumbent = Employee::where('is_chief_of_hospital', true)
+        // The hospital has one Chief and one HR officer. Reassigning the other
+        // person silently would rewrite a record HR never opened; naming them
+        // lets HR decide.
+        foreach ([
+            'is_chief_of_hospital' => __('Chief of Hospital'),
+            'is_hr_officer' => __('Human Resource Development Officer'),
+        ] as $column => $title) {
+            if (! $validated[$column]) {
+                continue;
+            }
+
+            $incumbent = Employee::where($column, true)
                 ->when($employee, fn ($query) => $query->whereKeyNot($employee->id))
                 ->first();
 
             if ($incumbent) {
-                $this->addError('form.is_chief_of_hospital', __(':name is recorded as Chief of Hospital. Clear that first.', [
+                $this->addError("form.{$column}", __(':name is recorded as :title. Clear that first.', [
                     'name' => $incumbent->fullName(),
+                    'title' => $title,
                 ]));
 
                 return null;
@@ -307,10 +318,21 @@ new class extends Component {
             <flux:switch
                 wire:model="form.is_chief_of_hospital"
                 :label="__('Chief of Hospital')"
-                :description="__('One person at a time.')"
+                :description="__('One person at a time. Approves every leave application.')"
             />
 
             <flux:error name="form.is_chief_of_hospital" />
+
+            {{-- Not a role. The HR account can be shared, a stand-in, an
+                 administrator covering a vacancy; the name printed on CS Form 6
+                 must not change because of any of that. --}}
+            <flux:switch
+                wire:model="form.is_hr_officer"
+                :label="__('Human Resource Development Officer')"
+                :description="__('One person at a time. Their name signs item 7.A of CS Form 6, whoever in HR does the work.')"
+            />
+
+            <flux:error name="form.is_hr_officer" />
         </div>
 
         <div @class(['flex items-center gap-4', 'justify-end' => $inModal])>
