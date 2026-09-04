@@ -11,78 +11,84 @@
             </flux:sidebar.header>
 
             <flux:sidebar.nav>
-                <flux:sidebar.group :heading="__('Platform')" class="grid">
-                    <flux:sidebar.item icon="home" :href="route('dashboard')" :current="request()->routeIs('dashboard')" wire:navigate>
-                        {{ __('Dashboard') }}
-                    </flux:sidebar.item>
+                {{--
+                    Grouped by who is doing the work, and every group is hidden
+                    whole when the person holds none of it. A heading with
+                    nothing under it tells somebody there is a door they cannot
+                    open.
+                --}}
+                <flux:sidebar.item icon="home" :href="route('dashboard')" :current="request()->routeIs('dashboard')" wire:navigate>
+                    {{ __('Dashboard') }}
+                </flux:sidebar.item>
 
-                    @if (auth()->user()?->employee)
-                        <flux:sidebar.item icon="identification" :href="route('pds.personal-information')" :current="request()->routeIs('pds.*')" wire:navigate>
-                            {{ __('My PDS') }}
-                        </flux:sidebar.item>
+                @if (auth()->user()?->employee || auth()->user()?->can('leave.manage'))
+                    <flux:sidebar.group :heading="__('Mine')" class="grid">
+                        @if (auth()->user()?->employee)
+                            <flux:sidebar.item icon="identification" :href="route('pds.personal-information')" :current="request()->routeIs('pds.*')" wire:navigate>
+                                {{ __('My PDS') }}
+                            </flux:sidebar.item>
 
-                        <flux:sidebar.item icon="calendar" :href="route('leave.mine')" :current="request()->routeIs('leave.mine')" wire:navigate>
-                            {{ __('My leave') }}
-                        </flux:sidebar.item>
-                    @endif
+                            <flux:sidebar.item icon="calendar" :href="route('leave.mine')" :current="request()->routeIs('leave.mine')" wire:navigate>
+                                {{ __('My leave') }}
+                            </flux:sidebar.item>
+                        @endif
 
-                    {{-- Anybody can hold a step: a section head is an ordinary
-                         employee with a section behind them. --}}
-                    @if (auth()->user()?->employee || auth()->user()?->can('leave.manage'))
+                        {{-- Anybody can hold a step: a section head is an
+                             ordinary employee with a section behind them. --}}
                         <flux:sidebar.item icon="inbox" :href="route('leave.approvals')" :current="request()->routeIs('leave.approvals')" wire:navigate>
                             {{ __('Approvals') }}
                         </flux:sidebar.item>
-                    @endif
+                    </flux:sidebar.group>
+                @endif
 
-                    @can('viewAny', App\Models\Employee::class)
-                        <flux:sidebar.item icon="users" :href="route('employees.index')" :current="request()->routeIs('employees.index')" wire:navigate>
-                            {{ __('Employees') }}
-                        </flux:sidebar.item>
-                    @endcan
+                @if (auth()->user()?->canAny(['employees.view', 'leave.manage', 'audit.view']))
+                    <flux:sidebar.group :heading="__('Human resource')" class="grid">
+                        @can('viewAny', App\Models\Employee::class)
+                            <flux:sidebar.item icon="users" :href="route('employees.index')" :current="request()->routeIs('employees.index')" wire:navigate>
+                                {{ __('Employees') }}
+                            </flux:sidebar.item>
+                        @endcan
 
-                    @can('issueAccount', App\Models\Employee::class)
-                        <flux:sidebar.item icon="key" :href="route('employees.issue-account')" :current="request()->routeIs('employees.issue-account')" wire:navigate>
-                            {{ __('Issue a login') }}
-                        </flux:sidebar.item>
-                    @endcan
+                        @can('leave.manage')
+                            <flux:sidebar.item icon="calculator" :href="route('leave.accrual')" :current="request()->routeIs('leave.accrual')" wire:navigate>
+                                {{ __('Post leave credits') }}
+                            </flux:sidebar.item>
+                        @endcan
 
-                    @can('org.manage')
-                        <flux:sidebar.item icon="building-office-2" :href="route('organization.divisions')" :current="request()->routeIs('organization.*')" wire:navigate>
-                            {{ __('Organization') }}
-                        </flux:sidebar.item>
-                    @endcan
+                        @can('audit.view')
+                            <flux:sidebar.item icon="clipboard-document-list" :href="route('audit.index')" :current="request()->routeIs('audit.*')" wire:navigate>
+                                {{ __('Audit log') }}
+                            </flux:sidebar.item>
+                        @endcan
+                    </flux:sidebar.group>
+                @endif
 
-                    @can('leave.manage')
-                        <flux:sidebar.item icon="calculator" :href="route('leave.accrual')" :current="request()->routeIs('leave.accrual')" wire:navigate>
-                            {{ __('Post leave credits') }}
-                        </flux:sidebar.item>
-                    @endcan
+                {{-- Set once and left alone, which is why it sits apart from
+                     the work HR does every day. --}}
+                @if (auth()->user()?->canAny(['org.manage', 'leave.types.manage', 'users.manage']))
+                    <flux:sidebar.group :heading="__('Setup')" class="grid">
+                        @can('org.manage')
+                            <flux:sidebar.item icon="building-office-2" :href="route('organization.divisions')" :current="request()->routeIs('organization.*')" wire:navigate>
+                                {{ __('Organization') }}
+                            </flux:sidebar.item>
+                        @endcan
 
-                    @can('leave.types.manage')
-                        <flux:sidebar.item icon="calendar-days" :href="route('leave.types')" :current="request()->routeIs('leave.types')" wire:navigate>
-                            {{ __('Leave types') }}
-                        </flux:sidebar.item>
-                    @endcan
+                        @can('leave.types.manage')
+                            <flux:sidebar.item icon="calendar-days" :href="route('leave.types')" :current="request()->routeIs('leave.types')" wire:navigate>
+                                {{ __('Leave types') }}
+                            </flux:sidebar.item>
+                        @endcan
 
-                    @can('audit.view')
-                        <flux:sidebar.item icon="clipboard-document-list" :href="route('audit.index')" :current="request()->routeIs('audit.*')" wire:navigate>
-                            {{ __('Audit log') }}
-                        </flux:sidebar.item>
-                    @endcan
-                </flux:sidebar.group>
+                        @can('issueAccount', App\Models\Employee::class)
+                            <flux:sidebar.item icon="key" :href="route('employees.issue-account')" :current="request()->routeIs('employees.issue-account')" wire:navigate>
+                                {{ __('Issue a login') }}
+                            </flux:sidebar.item>
+                        @endcan
+                    </flux:sidebar.group>
+                @endif
             </flux:sidebar.nav>
 
             <flux:spacer />
-
-            <flux:sidebar.nav>
-                <flux:sidebar.item icon="folder-git-2" href="https://github.com/laravel/livewire-starter-kit" target="_blank">
-                    {{ __('Repository') }}
-                </flux:sidebar.item>
-
-                <flux:sidebar.item icon="book-open-text" href="https://laravel.com/docs/starter-kits#livewire" target="_blank">
-                    {{ __('Documentation') }}
-                </flux:sidebar.item>
-            </flux:sidebar.nav>
 
             <x-desktop-user-menu class="hidden lg:block" :name="auth()->user()->name" />
         </flux:sidebar>
