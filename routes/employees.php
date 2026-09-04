@@ -12,5 +12,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::livewire('employees/issue-account', 'pages::employees.issue-account')
         ->name('employees.issue-account');
 
+    Route::livewire('employees/{employee}/edit', 'pages::employees.edit')
+        ->name('employees.edit');
+
     Route::livewire('audit', 'pages::audit.index')->name('audit.index');
 });

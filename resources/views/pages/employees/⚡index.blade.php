@@ -65,7 +65,7 @@ new #[Title('Employees')] class extends Component {
             <flux:table.column>{{ __('Position') }}</flux:table.column>
             <flux:table.column>{{ __('Section') }}</flux:table.column>
             <flux:table.column>{{ __('Account') }}</flux:table.column>
-            <flux:table.column>{{ __('PDS') }}</flux:table.column>
+            <flux:table.column>{{ __('Actions') }}</flux:table.column>
         </flux:table.columns>
 
         <flux:table.rows>
@@ -83,11 +83,21 @@ new #[Title('Employees')] class extends Component {
                         @endif
                     </flux:table.cell>
                     <flux:table.cell>
-                        {{-- Both links are guarded so neither appears to anyone
-                             who would only be shown a 403 on the other side.
+                        {{-- Every link is guarded so none appears to anyone who
+                             would only be shown a 403 on the other side.
                              Opening or downloading somebody else's PDS is
-                             recorded either way. --}}
+                             recorded either way. Edit is the employee master;
+                             it answers to a different ability than the PDS. --}}
                         <div class="flex gap-3 text-sm">
+                            @can('update', $employee)
+                                <flux:link
+                                    :href="route('employees.edit', ['employee' => $employee->id])"
+                                    wire:navigate
+                                >
+                                    {{ __('Edit') }}
+                                </flux:link>
+                            @endcan
+
                             @can('viewPds', $employee)
                                 <flux:link
                                     :href="route('pds.personal-information', ['employee' => $employee->id])"
