@@ -4,6 +4,7 @@ namespace App\Services\Leave;
 
 use App\Enums\LeaveLedgerKind;
 use App\Models\Employee;
+use App\Models\LeaveApplication;
 use App\Models\LeaveLedgerEntry;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Carbon;
@@ -81,6 +82,87 @@ class LeaveLedger
 
         return $this->writeOnce($employee, $ledger, LeaveLedgerKind::Expiry, -$balance, $period,
             __('Unused credits forfeited before the :period grant', ['period' => $period]));
+    }
+
+    /**
+     * Reserves credits for a pending application.
+     *
+     * Held at filing rather than at approval, so the next application sees what
+     * is actually left. Three eight-day applications against ten credits would
+     * otherwise each be measured against ten, all three would print as fully
+     * paid, and the hospital would pay 24 days out of a 10-day balance.
+     */
+    public function hold(LeaveApplication $application, string $ledger, float $days): ?LeaveLedgerEntry
+    {
+        if ($days <= 0) {
+            return null;
+        }
+
+        return $this->write(
+            $application->employee,
+            $ledger,
+            LeaveLedgerKind::Hold,
+            -$days,
+            null,
+            null,
+            __('Held for the application filed on :date', ['date' => now()->format('d/m/Y')]),
+            $application,
+        );
+    }
+
+    /**
+     * Gives back what an application is holding: it was disapproved, returned
+     * or cancelled.
+     *
+     * @return int how many holds were released
+     */
+    public function releaseFor(LeaveApplication $application): int
+    {
+        $alreadyReleased = LeaveLedgerEntry::where('leave_application_id', $application->id)
+            ->where('kind', LeaveLedgerKind::Release)
+            ->exists();
+
+        if ($alreadyReleased) {
+            // Releasing twice would invent credits out of nothing.
+            return 0;
+        }
+
+        $holds = LeaveLedgerEntry::where('leave_application_id', $application->id)
+            ->where('kind', LeaveLedgerKind::Hold)
+            ->get();
+
+        foreach ($holds as $hold) {
+            $this->write($application->employee, $hold->ledger, LeaveLedgerKind::Release,
+                -$hold->days, null, null, __('Released'), $application);
+        }
+
+        return $holds->count();
+    }
+
+    /**
+     * The application was approved. The hold is released and the days are
+     * committed in its place.
+     *
+     * Both entries are written rather than the hold being rewritten, because a
+     * row whose meaning changed after the fact cannot be read in order.
+     *
+     * @return int how many holds were converted
+     */
+    public function commitFor(LeaveApplication $application): int
+    {
+        $holds = LeaveLedgerEntry::where('leave_application_id', $application->id)
+            ->where('kind', LeaveLedgerKind::Hold)
+            ->get();
+
+        foreach ($holds as $hold) {
+            $this->write($application->employee, $hold->ledger, LeaveLedgerKind::Release,
+                -$hold->days, null, null, __('Released on approval'), $application);
+
+            $this->write($application->employee, $hold->ledger, LeaveLedgerKind::Commit,
+                $hold->days, null, null, __('Used'), $application);
+        }
+
+        return $holds->count();
     }
 
     /**
@@ -186,6 +268,7 @@ class LeaveLedger
         ?Carbon $on,
         ?string $period,
         string $description,
+        ?LeaveApplication $application = null,
     ): LeaveLedgerEntry {
         return DB::transaction(fn () => LeaveLedgerEntry::create([
             'employee_id' => $employee->id,
@@ -194,6 +277,7 @@ class LeaveLedger
             'days' => $days,
             'effective_date' => $on ?? now(),
             'period' => $period,
+            'leave_application_id' => $application?->id,
             'description' => $description,
             'created_by_user_id' => auth()->id(),
         ]));
