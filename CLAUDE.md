@@ -143,6 +143,33 @@ one spelling, not two.
 `employees` foreign keys null on delete, so removing a position would silently
 blank it on everyone holding it. `is_active` exists on all three for this.
 
+## The Excel templates
+
+`storage/app/templates/` holds three files. Two are CS Form 6: the original
+DTRC form, and `CS Form No. 6 (Application for Leave) DTRC linked.xlsx`, which
+is the one the exporter reads.
+
+**Never open the linked copy in Excel.** Its 25 checkboxes carry `<x:FmlaLink>`
+cell links injected into `xl/drawings/vmlDrawing1.vml`; saving from Excel drops
+them, and the form silently stops being tickable. Edit the original, then:
+
+```
+php artisan form6:link
+```
+
+It rebuilds the linked copy and prints every link beside the label it sits next
+to. Read that table — a link beside the wrong label ticks the wrong box, and
+nothing downstream would say so. The linked copy is generated, not maintained.
+
+**Hold the `Spreadsheet` in a variable.**
+`IOFactory::load($path)->getSheet(0)` returns a worksheet whose parent is
+immediately garbage-collected, and every `getCell()` on it then returns `NULL` —
+including cells that plainly hold values. It reads like a damaged file and is
+not one.
+
+**Several CS Form 6 captions are RichText**, not strings: `A10`, `E10`, `A69`.
+Writing a plain string to them replaces the underlined blanks with flat text.
+
 ## The CSV import
 
 **The import screen was removed**, along with its Livewire page, route, sidebar
