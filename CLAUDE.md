@@ -133,7 +133,7 @@ birth because those columns were `varchar`.
 | `docs/superpowers/specs/` | The design this is built from |
 | `docs/superpowers/plans/` | Task-by-task implementation plans |
 | `php artisan employees:import <path>` | Bulk employee load. The only import path; the screen was removed |
-| `php artisan hris:create-admin` | The first way in on a fresh install. Registration is closed and no seeder makes an admin |
+| `php artisan hris:create-account --role=admin\|hr` | The first way in, and the only way to make an HR account. Registration is closed and no seeder makes one |
 
 **Spell it `organization`, with a z.** `OrganizationSeeder` set the precedent and
 the routes, views and tests follow it. User-facing text says "Organization" too;

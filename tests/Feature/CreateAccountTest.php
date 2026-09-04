@@ -7,7 +7,7 @@ use Database\Seeders\RoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
-class CreateAdminTest extends TestCase
+class CreateAccountTest extends TestCase
 {
     use RefreshDatabase;
 
@@ -15,7 +15,7 @@ class CreateAdminTest extends TestCase
     {
         $this->seed(RoleSeeder::class);
 
-        $this->artisan('hris:create-admin', ['--name' => 'Dan Madelo', '--email' => 'admin@dtrc.local'])
+        $this->artisan('hris:create-account', ['--name' => 'Dan Madelo', '--email' => 'admin@dtrc.local'])
             ->expectsQuestion('Password', 'correct-horse-battery')
             ->expectsQuestion('Confirm the password', 'correct-horse-battery')
             ->assertSuccessful();
@@ -31,11 +31,59 @@ class CreateAdminTest extends TestCase
         $this->assertFalse($user->must_change_password);
     }
 
+    public function test_it_creates_an_hr_account(): void
+    {
+        // The only way there is. Issue a login, on the employee list, grants
+        // the employee role and nothing else.
+        $this->seed(RoleSeeder::class);
+
+        $this->artisan('hris:create-account', [
+            '--name' => 'Ruth Cuizon',
+            '--email' => 'hr@dtrc.local',
+            '--role' => 'hr',
+        ])
+            ->expectsQuestion('Password', 'correct-horse-battery')
+            ->expectsQuestion('Confirm the password', 'correct-horse-battery')
+            ->assertSuccessful();
+
+        $user = User::where('email', 'hr@dtrc.local')->sole();
+
+        $this->assertTrue($user->hasRole('hr'));
+        $this->assertTrue($user->can('leave.manage'));
+        $this->assertFalse($user->can('roles.manage'));
+    }
+
+    public function test_it_refuses_to_hand_out_the_employee_role(): void
+    {
+        // An employee account belongs to a person, and Issue a login is what
+        // ties the two together. One made here would belong to nobody.
+        $this->seed(RoleSeeder::class);
+
+        $this->artisan('hris:create-account', [
+            '--name' => 'Someone',
+            '--email' => 'someone@dtrc.local',
+            '--role' => 'employee',
+        ])->assertFailed();
+
+        $this->assertDatabaseCount('users', 0);
+    }
+
+    public function test_it_refuses_a_role_that_does_not_exist(): void
+    {
+        $this->seed(RoleSeeder::class);
+
+        $this->artisan('hris:create-account', [
+            '--name' => 'Someone',
+            '--email' => 'someone@dtrc.local',
+            '--role' => 'superuser',
+        ])->assertFailed();
+    }
+
     public function test_the_password_must_be_typed_twice_the_same_way(): void
     {
         $this->seed(RoleSeeder::class);
 
-        $this->artisan('hris:create-admin', ['--name' => 'Dan', '--email' => 'admin@dtrc.local'])
+        $this->artisan('hris:create-account', ['--name' => 'Dan', '--email' => 'admin@dtrc.local'])
             ->expectsQuestion('Password', 'correct-horse-battery')
             ->expectsQuestion('Confirm the password', 'correct-horse-batteru')
             ->assertFailed();
@@ -47,7 +95,7 @@ class CreateAdminTest extends TestCase
     {
         $this->seed(RoleSeeder::class);
 
-        $this->artisan('hris:create-admin', ['--name' => 'Dan', '--email' => 'admin@dtrc.local'])
+        $this->artisan('hris:create-account', ['--name' => 'Dan', '--email' => 'admin@dtrc.local'])
             ->expectsQuestion('Password', 'short')
             ->expectsQuestion('Confirm the password', 'short')
             ->assertFailed();
@@ -61,7 +109,7 @@ class CreateAdminTest extends TestCase
 
         User::factory()->create(['email' => 'admin@dtrc.local']);
 
-        $this->artisan('hris:create-admin', ['--name' => 'Dan', '--email' => 'admin@dtrc.local'])
+        $this->artisan('hris:create-account', ['--name' => 'Dan', '--email' => 'admin@dtrc.local'])
             ->expectsQuestion('Password', 'correct-horse-battery')
             ->expectsQuestion('Confirm the password', 'correct-horse-battery')
             ->assertFailed();
@@ -74,7 +122,7 @@ class CreateAdminTest extends TestCase
         // An admin role created on the fly would carry no permissions: an
         // account that signs in and can do nothing.
         // It stops before asking for anything, so there is nothing to type.
-        $this->artisan('hris:create-admin', ['--name' => 'Dan', '--email' => 'admin@dtrc.local'])
+        $this->artisan('hris:create-account', ['--name' => 'Dan', '--email' => 'admin@dtrc.local'])
             ->assertFailed();
 
         $this->assertDatabaseCount('users', 0);
@@ -84,7 +132,7 @@ class CreateAdminTest extends TestCase
     {
         $this->seed(RoleSeeder::class);
 
-        $this->artisan('hris:create-admin', ['--name' => 'Dan', '--email' => 'admin@dtrc.local'])
+        $this->artisan('hris:create-account', ['--name' => 'Dan', '--email' => 'admin@dtrc.local'])
             ->expectsQuestion('Password', 'correct-horse-battery')
             ->expectsQuestion('Confirm the password', 'correct-horse-battery')
             ->assertSuccessful();
