@@ -94,10 +94,38 @@ falls under the Data Privacy Act (RA 10173).
 - `.env` stays out of version control. Rotate `APP_KEY` if it ever leaks.
 - HTTPS even on the LAN, self-signed if necessary. Over plain HTTP every
   password and every PDS crosses the switch in clear text; "it's only local" is
-  not a reason to skip it.
-- Secure and HttpOnly cookies. Security headers (CSP, X-Frame-Options) before
-  the system carries real records.
-- `composer audit` before a release.
+  not a reason to skip it. **`APP_FORCE_HTTPS=true` is the one switch**: it
+  forces the scheme on every generated URL and marks the session cookie
+  `Secure`. Leave it off in development — Laragon serves over http, and a
+  Secure cookie there is never sent back, which looks exactly like being unable
+  to log in.
+- Security headers ship in `App\Http\Middleware\SecurityHeaders`, appended to
+  every response. See the CSP note below before adding to them.
+- `composer audit` before a release. Clean as of 2026-09-07.
+- **Back up before anything else.** `php artisan hris:backup` writes one dated
+  archive holding the database and the uploaded files. `storage/backups` is
+  gitignored, and it has to stay that way: one archive is every PDS in the
+  hospital, including the answers to items 34-40, and once committed it is in
+  the history for good.
+
+**The CSP has no `script-src`, and that is deliberate**
+
+Livewire ships Alpine, and Alpine evaluates its directives at runtime. The only
+script policy this application could actually run under is one carrying
+`unsafe-eval` and `unsafe-inline` — which permits exactly what a script policy
+exists to forbid, while reading on an audit as though scripts were locked down.
+A header claiming a protection it does not provide is worse than its absence,
+because it stops anyone looking again.
+
+What is set instead needs no nonce and is not weakened by inline code:
+`frame-ancestors 'none'`, `base-uri 'self'`, `form-action 'self'`,
+`object-src 'none'`, plus `X-Frame-Options`, `X-Content-Type-Options`,
+`Referrer-Policy: same-origin` and a `Permissions-Policy` that turns off the
+camera, microphone and location. HSTS is sent only when the request is already
+secure; over http every browser ignores it.
+
+Closing the script side properly means threading a nonce through every Livewire
+and Flux response. That is its own piece of work, not a line in this file.
 
 **Audit**
 - `spatie/laravel-activitylog` records writes on `Employee`. Reads are recorded
@@ -153,6 +181,7 @@ birth because those columns were `varchar`.
 | `php artisan employees:import <path>` | Bulk employee load. The only import path; the screen was removed |
 | `php artisan hris:create-account --role=admin\|hr` | The first way in, and the only way to make an HR account. Registration is closed and no seeder makes one |
 | `php artisan leave:open-balances <path> --as-of=` | HR's leave card into the ledger. Header-driven: `employee_number` then one column per ledger. All-or-nothing |
+| `php artisan hris:backup` | Database and uploads into one dated zip. Needs `BACKUP_MYSQLDUMP` on Windows — Laragon keeps `mysqldump` off the PATH |
 
 **Spell it `organization`, with a z.** `OrganizationSeeder` set the precedent and
 the routes, views and tests follow it. User-facing text says "Organization" too;
@@ -195,6 +224,27 @@ controls, not cells, and every tick would vanish — the type of leave would pri
 blank on a signed document. A correct PDF needs LibreOffice on the server
 (`soffice --headless --convert-to pdf`), which the LAN box does not have. Revisit
 that when it does, not before.
+
+## The certificate of employment
+
+`employees/{employee}/certificate` — HR only, and deliberately not the employee
+themselves. The paper carries the HR officer's name under it, so letting a
+person produce their own hands out a signature; the data being theirs does not
+change what the document claims.
+
+**The peso figure is typed at print time and never stored.** Salaries move with
+every tranche of the CSC schedule, and an amount kept on the employee record
+would quietly print last year's figure on a document going to a bank. The salary
+grade comes off the plantilla item and is printed alongside, because that is the
+part the system can vouch for.
+
+**It refuses a separated employee.** The system holds `is_active`, not the date
+they left, so the certificate could say when they started and never when they
+stopped. That paper is a Service Record, which this system does not issue yet.
+
+The letterhead lives in `config/hospital.php`. **`address` and `contact` are
+blank** and the header omits the line rather than printing a placeholder — fill
+them in before the first certificate leaves the building.
 
 ## The CSV import
 

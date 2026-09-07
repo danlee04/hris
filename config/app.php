@@ -56,6 +56,25 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Force HTTPS
+    |--------------------------------------------------------------------------
+    |
+    | One switch for the hospital LAN. With this on, every generated URL uses
+    | https and the session cookie is marked Secure, so it never travels over a
+    | plain connection. It stays off in development, where Laragon serves the
+    | site over http and a Secure cookie would simply never be sent back —
+    | which looks exactly like being unable to log in.
+    |
+    | Turning it on requires a certificate on the server first. A self-signed
+    | one is enough on a LAN; what is not enough is leaving this off because
+    | the browser complains about the certificate.
+    |
+    */
+
+    'force_https' => (bool) env('APP_FORCE_HTTPS', false),
+
+    /*
+    |--------------------------------------------------------------------------
     | Application Timezone
     |--------------------------------------------------------------------------
     |

@@ -81,3 +81,40 @@ select:focus[data-flux-control] {
 .dark [data-viz-fill] {
     background-color: var(--viz-dark);
 }
+
+/*
+    Printing a document out of an application page.
+
+    Everything on the page is hidden and only the marked sheet is shown, rather
+    than hiding the sidebar and header by name — a layout gains a new element
+    eventually, and that element would appear in the middle of a signed
+    certificate with nothing to have warned anybody.
+
+    `visibility` and not `display`, because the sheet sits inside those hidden
+    ancestors and a hidden ancestor takes its children with it.
+*/
+@media print {
+    body * {
+        visibility: hidden;
+    }
+
+    [data-print-sheet],
+    [data-print-sheet] * {
+        visibility: visible;
+    }
+
+    [data-print-sheet] {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        max-width: none;
+        box-shadow: none;
+        padding: 0;
+    }
+
+    @page {
+        size: A4;
+        margin: 18mm 20mm;
+    }
+}

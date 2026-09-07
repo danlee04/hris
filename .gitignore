@@ -6,6 +6,9 @@
 /public/storage
 /storage/*.key
 /storage/pail
+# Each archive is the whole hospital: every PDS, including the answers to items
+# 34-40. Committed once, it is in the history for good.
+/storage/backups
 /vendor
 .env
 .env.backup

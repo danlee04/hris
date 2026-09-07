@@ -15,6 +15,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // One employee. Correcting them is a modal on this page and on the list;
     // there is no edit page, so there is one place the form can be opened from
     // and one shape it can be in.
+    Route::livewire('employees/{employee}/certificate', 'pages::employees.certificate')
+        ->name('employees.certificate');
+
     Route::livewire('employees/{employee}', 'pages::employees.show')->name('employees.show');
 
     Route::livewire('audit', 'pages::audit.index')->name('audit.index');

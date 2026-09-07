@@ -59,6 +59,18 @@ new class extends Component {
                 </flux:button>
             @endcan
 
+            @can('issueCertificate', $employee)
+                <flux:button
+                    :href="route('employees.certificate', $employee)"
+                    variant="filled"
+                    icon="document-text"
+                    size="sm"
+                    wire:navigate
+                >
+                    {{ __('Certificate') }}
+                </flux:button>
+            @endcan
+
             <flux:button :href="route('employees.index')" variant="ghost" size="sm" wire:navigate>
                 {{ __('Back to the list') }}
             </flux:button>

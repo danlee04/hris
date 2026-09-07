@@ -50,6 +50,19 @@ class EmployeePolicy
         return $user->can('users.manage');
     }
 
+    /**
+     * HR only, and deliberately not the employee themselves.
+     *
+     * A certificate of employment is a document the hospital signs. Letting a
+     * person generate their own — carrying the HR officer's name under it —
+     * hands out a signature, and the fact that the data is their own does not
+     * change what the paper claims.
+     */
+    public function issueCertificate(User $user, Employee $employee): bool
+    {
+        return $user->can('employees.view');
+    }
+
     // -----------------------------------------------------------------
     // The Personal Data Sheet
     //

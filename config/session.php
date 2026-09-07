@@ -169,7 +169,10 @@ return [
     |
     */
 
-    'secure' => env('SESSION_SECURE_COOKIE'),
+    // Follows APP_FORCE_HTTPS unless it is set on its own, so turning on HTTPS
+    // is one switch rather than two. Two switches means one of them is
+    // eventually left off, and the one left off is always this one.
+    'secure' => env('SESSION_SECURE_COOKIE', env('APP_FORCE_HTTPS', false)),
 
     /*
     |--------------------------------------------------------------------------

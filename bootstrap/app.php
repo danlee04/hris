@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Middleware\EnsurePasswordHasBeenChanged;
+use App\Http\Middleware\SecurityHeaders;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -14,6 +15,10 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->appendToGroup('web', EnsurePasswordHasBeenChanged::class);
+
+        // On every response, including the ones that redirect and the ones that
+        // fail — an error page is still a page a browser will frame.
+        $middleware->append(SecurityHeaders::class);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(
