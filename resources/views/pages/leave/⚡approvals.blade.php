@@ -1,11 +1,9 @@
 <?php
 
 use App\Enums\ApprovalAction;
-use App\Enums\LeaveStatus;
-use App\Enums\LeaveStep;
 use App\Models\LeaveApplication;
-use App\Models\LeaveApproval;
 use App\Services\AuditRecorder;
+use App\Services\Leave\ApprovalQueue;
 use App\Services\Leave\LeaveDecision;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Validation\ValidationException;
@@ -84,33 +82,15 @@ new #[Title('Approvals')] class extends Component {
     }
 
     /**
-     * The applications whose *current* step belongs to this person.
+     * The applications whose current step belongs to this person.
      *
-     * Two steps rather than one correlated subquery: find the first unsigned
-     * approval of every pending application, then keep the ones that are this
-     * person's. Written the plain way because a query nobody can read is a
-     * query nobody can fix, and this list is at most a few hundred rows.
+     * The rule lives in ApprovalQueue because the dashboard counts the same
+     * thing, and two copies of it would drift apart on the day somebody
+     * changes who answers for the HR step.
      */
     private function waiting(): Builder
     {
-        $employeeId = auth()->user()?->employee?->id;
-        $isHr = auth()->user()?->can('leave.manage') ?? false;
-
-        $applicationIds = LeaveApproval::query()
-            ->whereNull('acted_at')
-            ->whereHas('application', fn ($q) => $q->where('status', LeaveStatus::Pending))
-            ->get(['id', 'leave_application_id', 'sequence', 'step', 'approver_employee_id'])
-            ->groupBy('leave_application_id')
-            ->map(fn ($approvals) => $approvals->sortBy('sequence')->first())
-            ->filter(fn ($approval) => $approval->approver_employee_id !== null
-                ? $approval->approver_employee_id === $employeeId
-                : ($isHr && $approval->step === LeaveStep::Hr))
-            ->pluck('leave_application_id');
-
-        return LeaveApplication::query()
-            ->whereIn('id', $applicationIds)
-            ->with(['employee', 'type', 'approvals.approver'])
-            ->latest('filed_at');
+        return app(ApprovalQueue::class)->waitingFor(auth()->user());
     }
 
     /** @return array<string, mixed> */

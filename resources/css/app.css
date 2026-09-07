@@ -64,3 +64,20 @@ select:focus[data-flux-control] {
 /* \[:where(&)\]:size-4 {
     @apply size-4;
 } */
+
+/*
+    Chart fills. The colour is data, so it arrives on the element as a custom
+    property rather than as a class — Tailwind compiles the classes it can see
+    in the source, and a hue chosen at render time is not one of them.
+
+    Two values because the palette is stepped separately for each surface. A
+    dark chart is not a light chart with the brightness turned down; each set
+    was validated against the surface it actually sits on.
+*/
+[data-viz-fill] {
+    background-color: var(--viz-light);
+}
+
+.dark [data-viz-fill] {
+    background-color: var(--viz-dark);
+}

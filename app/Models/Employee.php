@@ -126,6 +126,12 @@ class Employee extends Model
         return $this->hasOne(FamilyBackground::class);
     }
 
+    /** Every credit this person has ever been given, held or spent. */
+    public function leaveLedgerEntries(): HasMany
+    {
+        return $this->hasMany(LeaveLedgerEntry::class);
+    }
+
     /** CS Form 212 item 18, in the order the employee arranged them. */
     public function children(): HasMany
     {

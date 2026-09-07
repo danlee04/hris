@@ -15,9 +15,14 @@ leave and DTR — has no spec yet.
 
 ## Working agreement
 
-**Never run `git commit` or `git push`.** Dan makes every commit himself. When a
-piece of work is finished, hand him one commit message covering it — a subject
-line naming what was edited, no `feat:`/`fix:` prefixes, no metaphors.
+**Never run `git commit` or `git push`.** Dan makes every commit himself.
+
+**Hand him a commit message every third finished piece of work, not every one,
+and always exactly one.** One `git add -A` and one subject line covering all
+three — a line naming what was edited, no `feat:`/`fix:` prefixes, no metaphors.
+Do not split it into one commit per piece even when the three are unrelated; he
+consolidates on purpose. Say when a piece is done; just do not end every one
+with a commit block.
 
 **English only** in code, comments, commit messages, and every string a user
 sees. The conversation is in Taglish; the codebase is not.
@@ -147,6 +152,7 @@ birth because those columns were `varchar`.
 | `docs/superpowers/plans/` | Task-by-task implementation plans |
 | `php artisan employees:import <path>` | Bulk employee load. The only import path; the screen was removed |
 | `php artisan hris:create-account --role=admin\|hr` | The first way in, and the only way to make an HR account. Registration is closed and no seeder makes one |
+| `php artisan leave:open-balances <path> --as-of=` | HR's leave card into the ledger. Header-driven: `employee_number` then one column per ledger. All-or-nothing |
 
 **Spell it `organization`, with a z.** `OrganizationSeeder` set the precedent and
 the routes, views and tests follow it. User-facing text says "Organization" too;
