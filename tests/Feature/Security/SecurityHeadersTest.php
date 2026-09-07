@@ -69,7 +69,13 @@ class SecurityHeadersTest extends TestCase
         // Sent over http, HSTS is ignored by every browser. Sending it anyway
         // would leave a header on the response that looks like protection and
         // is not.
-        $this->get(route('login'))->assertHeaderMissing('Strict-Transport-Security');
+        //
+        // The scheme is written out rather than taken from route(): with
+        // APP_FORCE_HTTPS set in the environment every generated URL is https,
+        // and this test would pass or fail on a setting that has nothing to do
+        // with what it is checking.
+        $this->get('http://hris.test'.route('login', absolute: false))
+            ->assertHeaderMissing('Strict-Transport-Security');
     }
 
     public function test_it_promises_https_once_the_connection_is_secure(): void

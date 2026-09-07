@@ -38,6 +38,13 @@ npm run build           # whenever a Blade view, CSS or JS changed
 vendor/bin/pint --dirty
 ```
 
+**After adding an artisan command, run `php artisan optimize:clear` before its
+tests.** Until the cache is cleared the test application does not know the
+command exists, Symfony asks "Did you mean one of these?", and every test in the
+file fails with `Received Mockery_1_Illuminate_Console_OutputStyle::
+askQuestion(), but no expectations were specified` — which says nothing about
+the real cause and sends you looking at the command's own prompts.
+
 Report the real numbers. A test suite that was not run is not a passing suite.
 
 ## Security — read this before writing code that touches input
@@ -182,6 +189,7 @@ birth because those columns were `varchar`.
 | `php artisan hris:create-account --role=admin\|hr` | The first way in, and the only way to make an HR account. Registration is closed and no seeder makes one |
 | `php artisan leave:open-balances <path> --as-of=` | HR's leave card into the ledger. Header-driven: `employee_number` then one column per ledger. All-or-nothing |
 | `php artisan hris:backup` | Database and uploads into one dated zip. Needs `BACKUP_MYSQLDUMP` on Windows — Laragon keeps `mysqldump` off the PATH |
+| `php artisan employees:issue-logins --slips=<path>` | A login for every active employee who has none. Shared temporary password; read the warning below |
 
 **Spell it `organization`, with a z.** `OrganizationSeeder` set the precedent and
 the routes, views and tests follow it. User-facing text says "Organization" too;
@@ -224,6 +232,25 @@ controls, not cells, and every tick would vanish — the type of leave would pri
 blank on a signed document. A correct PDF needs LibreOffice on the server
 (`soffice --headless --convert-to pdf`), which the LAN box does not have. Revisit
 that when it does, not before.
+
+## Issuing the logins
+
+`employees:issue-logins` builds `firstnamelastname@gmail.com` from the employee
+master and sets one shared temporary password. It exists because issuing 130
+accounts one at a time through the screen is why nobody's PDS is filled in.
+
+**The shared password is a real exposure, and the mitigation is speed, not
+code.** Every account is created with `must_change_password`, so it reaches the
+change-password page and nothing else — no PDS can be read with it. What that
+cannot stop is somebody on the LAN who knows the naming pattern signing in as a
+colleague who has not signed in yet, choosing a password, and keeping the
+account. **Issue only the batch you can hand out the same day.**
+
+The addresses are usernames, not mailboxes. There is no mail server on the LAN,
+so nothing is ever sent to them — but they are real addresses at a domain
+Google owns, and some of them belong to strangers. If a mail server is ever
+added, password resets would go to those strangers: change the domain to
+something the hospital controls before that happens, not after.
 
 ## The certificate of employment
 

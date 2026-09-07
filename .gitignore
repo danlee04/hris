@@ -9,6 +9,12 @@
 # Each archive is the whole hospital: every PDS, including the answers to items
 # 34-40. Committed once, it is in the history for good.
 /storage/backups
+
+# The slips employees:issue-logins writes: every username beside the password
+# that opens it, in clear text. Committed once, it is in the history for good —
+# and unlike a backup, anybody who clones the repository can sign in with it.
+/slips.csv
+/*slips*.csv
 /vendor
 .env
 .env.backup
